@@ -1,0 +1,4 @@
+baseURL = 'http://petermaguire.xyz/'
+languageCode = 'en-gb'
+title = 'Peter Maguire'
+theme = "blackburn"
