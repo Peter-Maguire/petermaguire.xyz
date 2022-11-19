@@ -1,0 +1,208 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Peter Maguire</title><link>https://petermaguire.xyz/posts/</link><description>Recent content in Posts on Peter Maguire</description><generator>Hugo -- gohugo.io</generator><language>en-gb</language><copyright>&amp;copy; 2022 Peter Maguire</copyright><lastBuildDate>Sat, 19 Nov 2022 17:47:26 +0000</lastBuildDate><atom:link href="https://petermaguire.xyz/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Epsilon Stealer Malware Analysis</title><link>https://petermaguire.xyz/posts/epsilon-stealer-analysis/</link><pubDate>Sat, 19 Nov 2022 17:47:26 +0000</pubDate><guid>https://petermaguire.xyz/posts/epsilon-stealer-analysis/</guid><description>Spread Epsilon generally spreads via the game tester scam. The victim is prompted to try out a game from an itch.io link. The download generally contains an archive, usually RAR, which has a password. The password will be given to the victim via Discord, this is to try and evade automated scanning/execution by anyone other than the victim.
+An example DM a victim would receive Infection Once the victim has downloaded the archive and extracted it, they will be faced with a Unity game.</description><content type="html"><![CDATA[<h2 id="spread">Spread</h2>
+<p>Epsilon generally spreads via the game tester scam.
+The victim is prompted to try out a game from an itch.io link. The download generally contains an archive, usually RAR, which has a password.
+The password will be given to the victim via Discord, this is to try and evade automated scanning/execution by anyone other than the victim.</p>
+<figure><img src="/img/epsilon/spread-example.png"/><figcaption>
+            <h4>An example DM a victim would receive</h4>
+        </figcaption>
+</figure>
+
+<h2 id="infection">Infection</h2>
+<p>Once the victim has downloaded the archive and extracted it, they will be faced with a Unity game.
+Other Discord malware attempts to masquerade as a Unity game by including files from unrelated legitimate games inside the archive.
+Epsilon takes this a step further by wrapping the malicious code inside a Unity game shell which drops the second stage payload.
+Scanning the executable with VirusTotal will also turn up clean and shares a hash with many legitimate Unity game launchers.</p>
+<figure><img src="/img/epsilon/archive-context.png"/><figcaption>
+            <h4>The archive contents</h4>
+        </figcaption>
+</figure>
+
+<p>When the victim launches the executable, a Unity game will launch and ask for a key.
+The purpose of this key is unknown, but I would guess this is designed to be a confirmation that a user has actually executed the file.</p>
+<p><figure><img src="/img/epsilon/fake-out.png"/><figcaption>
+            <h4>Pretending to have run the game without asking for the key</h4>
+        </figcaption>
+</figure>
+
+<figure><img src="/img/epsilon/enter-the-key.png"/><figcaption>
+            <h4>An example of the key entry screen</h4>
+        </figcaption>
+</figure>
+</p>
+<p>With a correct key entry, a very basic game will launch. This game is usually ripped directly from elsewhere,
+and only serves to convince the victim that the attacker&rsquo;s request was legitimate.</p>
+<h2 id="payload">Payload</h2>
+<p>Upon launching the game, the Unity shell drops an application called <a href="https://www.virustotal.com/gui/file/b3b1578ad65142d2c12d2db14e1fcfc7d76c0cbd6bb97655a6c6b70ff9e959c7">GameManager</a> into <code>%LocalAppData%\Temp\[random]\[random]</code> and then executes it.</p>
+<p>GameManager is an Electron based application which executes the initial malicious payload and also displays the &ldquo;game&rdquo; that is shown to the user.</p>
+<figure><img src="/img/epsilon/game-manager.png"/><figcaption>
+            <h4>The GameManager program</h4>
+        </figcaption>
+</figure>
+
+<h3 id="information-gathering">Information Gathering</h3>
+<h4 id="iplocation-data">IP/Location Data</h4>
+<p>The malware retrieves the users external IP address and geolocation data from <a href="https://ipinfo.io">ipinfo.io</a>.</p>
+<h4 id="chromium-data">Chromium Data</h4>
+<p>Epsilon looks for Chromium data in the following locations, corresponding to Discord, Chrome, Operate, Brave, Yandex, Edge and Vivaldi install locations.
+Paths containing {number} are iterated over 5 times, substituting {number} with a number 1-5.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">appData</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">env</span>.<span style="color:#a6e22e">APPDATA</span>; <span style="color:#75715e">// Default: C:\Users\[username]\AppData\Roaming
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">env</span>.<span style="color:#a6e22e">LOCALAPPDATA</span>; <span style="color:#75715e">// Default: C:\Users\[username]\AppData\Local
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> <span style="color:#a6e22e">chromiumPaths</span> <span style="color:#f92672">=</span> [
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discord\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordcanary\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordptb\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discorddevelopment\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\lightcord\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Default\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Guest Profile\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Default\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Guest Profile\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera Stable\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera GX Stable\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera Stable\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera GX Stable\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Default\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Guest Profile\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Default\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Guest Profile\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Guest Profile\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Guest Profile\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Default\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Guest Profile\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Default\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Guest Profile\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Default\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Guest Profile\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Default\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Guest Profile\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Profile {number}\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Profile {number}\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Profile {number}\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Profile {number}\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Profile {number}\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Profile {number}\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Profile {number}\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Profile {number}\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Profile {number}\\Network\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Profile {number}\\Network\\&#34;</span>
+</span></span><span style="display:flex;"><span>];
+</span></span></code></pre></div><p>The malware iterates over the list multiple times to extract the following information, skipping over the paths which contain the phrase <code>cord</code>:</p>
+<ul>
+<li>Cookies</li>
+<li>Saved Passwords</li>
+<li>Autofill data</li>
+<li>Saved Cards</li>
+</ul>
+<p>The results of these extractions are stored a temp directory created with <code>os.createtempdir()</code>.</p>
+<p>The list is iterated a final time to retrieve Discord login data specifically.</p>
+<ul>
+<li>For paths including the phrase <code>discord</code>:
+<ul>
+<li>The <code>Local State</code> file is read to extract the login decryption key.</li>
+<li>The login decryption key is decrypted using <a href="https://github.com/daguej/node-dpapi">DPAPI unprotectData</a></li>
+<li>The folder <code>Local Storage\leveldb</code> is iterated over, reading each file which ends in <code>.log</code> or <code>.ldb</code></li>
+<li>Each file is opened as text, and it attempts to match the regex for an encrypted Discord token <code>dQw4w9WgXcQ:[^.*\['(.*)'\].*$][^\&quot;]*</code></li>
+<li>For each match, the encrypted element of the token is extracted and decrypted using the key retrieved earlier</li>
+<li>The decrypted token is pushed to the results array</li>
+</ul>
+</li>
+<li>For all other paths:
+<ul>
+<li>The <code>.log</code> and <code>.ldb</code> files are retrieved from <code>Local Storage\leveldb</code> as before</li>
+<li>The files are opened as text, and the regex for an unencrypted Discord token is used <code>[\w-]{24}.[\w-]{6}.[\w-]{25,110}</code></li>
+<li>The token is pushed to the results array</li>
+</ul>
+</li>
+</ul>
+<h4 id="firefox-data">Firefox Data</h4>
+<p>Similar to Chromium data extraction, the following data is extracted from <code>%APPDATA%\Mozilla\Firefox\Profiles</code>:</p>
+<ul>
+<li>Saved Passwords</li>
+<li>Cookies</li>
+<li>Autofill data</li>
+</ul>
+<p>The results of these extractions are stored in the same temp directory as the Chromium data, under a sub-folder called <code>epsilon-[username]</code>.
+Interestingly, no attempt is made to extract Discord tokens from Firefox.</p>
+<h4 id="discord">Discord</h4>
+<p>The tokens retrieved from Chromium data extraction are used to extract the following info:</p>
+<ul>
+<li>Account badges</li>
+<li>Nitro subscription (if any)</li>
+<li>Email address</li>
+<li>Payment sources</li>
+<li>Phone Number</li>
+<li>HQ Friends list</li>
+</ul>
+<p>Epsilon downloads and injects a payload into the Discord client which is used for further data extraction.
+The following paths are checked for a Discord installation:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">discordPaths</span> <span style="color:#f92672">=</span> [
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discord\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordcanary\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordptb\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discorddevelopment\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\lightcord\\&#34;</span>
+</span></span><span style="display:flex;"><span>];
+</span></span></code></pre></div><p>If a Discord installation is found, it then attempts to <a href="https://en.wikipedia.org/wiki/Glob_(programming)">glob</a> match a file with the path
+<code>\app-*\modules\discord_desktop_core-*\discord_desktop_core\index.js</code>. This path corresponds to a plaintext JS file which is executed before the Discord client is initialised,
+and is usually contains a single line. Epsilon downloads a payload from a paste service and overwrites <code>index.js</code> with the contents of the paste.
+A directory is also made called <code>Epsilon-Stealer</code> as a crude way of signalling that the injection is successful. This is a common practise in stealers,
+and in most the presence of this directory is checked for in order to decide whether to continue with the infection, however it doesn&rsquo;t appear to be used here.</p>
+<p>The presence of BetterDiscord is also checked for and, if found, BetterDiscord&rsquo;s &lsquo;webhook protection&rsquo; feature is
+disabled by overwriting the string <code>api/webhooks</code> with <code>vulsa1111</code> in <code>\BetterDiscord\data\betterdiscord.asar</code></p>
+<p>The following paths are also checked for a file which contains the phrase <code>discord_backup_codes</code>, presumably hoping to find a file containing 2FA backup codes.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#66d9ef">let</span> <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">env</span>.<span style="color:#a6e22e">USERPROFILE</span>;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">userPaths</span> <span style="color:#f92672">=</span> [
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Desktop\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Downloads\\&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Documents\\&#34;</span>
+</span></span><span style="display:flex;"><span>];
+</span></span></code></pre></div><h4 id="cryptocurrency">Cryptocurrency</h4>
+<p>Each non-discord chromium path is checked for the following extensions, and the data is extracted from each:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\nkbihfbeogaeaoehlefnkodbefgpgknn&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Metamask&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\bfnaelmomeimhlpmgjnjophhpkkoljpa&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Phantom&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\fhbohimaelbohpjbbldcngcnapndodjp&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Binance&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\hnfanknocfeofbddgcijnmhnfnkdnaad&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Coinbase&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\aeachknmefphepccionboohckonoeemg&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Coin98&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\hifafgmccdpekplomjjkcfgodnhcellj&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Crypto_com&#34;</span>;
+</span></span></code></pre></div><p><code>%APPDATA%\Exodus\exodus.wallet</code> is also checked for and extracted.</p>
+<p>The data for Crypto wallets is stored in <code>[temp dir]\epsilon-[username]\Wallets</code>.</p>
+<h4 id="telegram">Telegram</h4>
+<p>Epsilon checks for the existence of <code>%APPDATA%\Telegram Desktop\tdata</code>, lists all sub-dirs and files and:</p>
+<ul>
+<li>If a sub-directory name is exactly 16 letters long, the contents of the directory is extracted</li>
+<li>If a filename ends in s and is exactly 17 letters long, the file is extracted</li>
+</ul>
+<p>The malware also attempts to extract the <code>usertag</code>, <code>settingss</code> and <code>key_datas</code> files from the <code>tdata</code> directory,
+due to poor programming it copies each of these files once for every file inside the <code>tdata</code> directory.</p>
+<p>The extracted data is copied to <code>[temp dir]\epsilon-[username]\Messengers\Telegram</code></p>
+<h4 id="mobaxterm">MobaXterm</h4>
+<p>Interestingly, Epsilon targets <a href="https://mobaxterm.mobatek.net/">MobaXTerm</a>, extracting <code>%APPDATA%\MobaXterm\MobaXterm.ini</code>
+and storing it in <code>[temp dir]\epsilon-[username]\Ftps</code>. This is the only SSH client that is targeted.</p>
+<h4 id="filezilla">FileZilla</h4>
+<p><a href="https://filezilla-project.org/">FileZilla</a> is also targeted, extracting <code>%APPDATA%\FileZilla\filezilla.xml</code>
+and storing it in <code>[temp dir]\epsilon-[username]\Ftps</code></p>
+<h2 id="exfiltration">Exfiltration</h2>
+<p>Data is sent back to the attacker via a Discord webhook. This webhook is retrieved from a paste service,
+although in one of the samples analysed the paste was retrieved but its result was discarded in favour of a hardcoded webhook.</p>
+<p>Once all the above data has been extracted, the entire <code>epsilon-[username]</code> folder is compressed into a zip file.
+The zip file is then uploaded to the webhook, along with two embeds.
+One which summarises the number of each type of data that has been extracted, along with the computer name, username and IP address.
+The other which shows the Discord specific information.</p>
+<figure><img src="/img/epsilon/epsilon-icons.png"/><figcaption>
+            <h4>The emojis used in the embeds</h4>
+        </figcaption>
+</figure>
+
+<p>The Discord specific embed uses emojis which are prefixed with EM_, and were created between 2022-02-02 and 2022-07-05,
+with one emoji being created a year earlier on 2021-02-26.</p>
+<p>The summary embed refers to messengers as &ldquo;Applications de communications&rdquo;, suggesting that the creator is French-speaking.</p>
+<h2 id="evasion">Evasion</h2>
+<p>Epsilon does not appear to try and evade detection or analysis in any way.
+The name &ldquo;Epsilon&rdquo; is written in several places inside the malware, with each embed and file being marked with the name.</p>
+<h2 id="persistence">Persistence</h2>
+<p>After the initial data extraction is complete, a second version of the malware titled <a href="https://www.virustotal.com/gui/file/3a3e3f8bb3ea348375c6afad7f6f28a90040c178ac29b378b60e6798cbf8c3ac">WindowsBootManager.exe</a> is downloaded from
+the Discord CDN and moved into <code>%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup</code>. This file appears to be functionally
+identical to the original malware, but without the game. In the latest sample, this file was uploaded on 2022-11-11.</p>
+<p>Interestingly, if the package <code>electron-squirrel-startup</code> is detected, the app quits immediately before running its payload.</p>
+]]></content></item></channel></rss>
