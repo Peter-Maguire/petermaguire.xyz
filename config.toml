@@ -1,4 +1,65 @@
-baseURL = 'http://petermaguire.xyz/'
+baseURL = 'https://petermaguire.xyz/'
 languageCode = 'en-gb'
 title = 'Peter Maguire'
-theme = "blackburn"
+theme = "hello-friend-ng"
+copyright = "&copy; 2022 Peter Maguire"
+canonifyurls = true
+paginate = 10
+
+[params]
+    dateform        = "Jan 2, 2006"
+    dateformShort   = "Jan 2"
+    dateformNum     = "2006-01-02"
+    dateformNumTime = "2006-01-02 15:04"
+
+    # Subtitle for home
+    # Set disableReadOtherPosts to true in order to hide the links to other posts.
+    disableReadOtherPosts = false
+
+    # Enable sharing buttons, if you like
+    enableSharingButtons = true
+
+    # Metadata mostly used in document's head
+    description = "Personal Blog"
+    keywords = "homepage, blog"
+    images = [""]
+
+[taxonomies]
+    category = "blog"
+    tag      = "tags"
+    series   = "series"
+
+
+[params.logo]
+    logoCursorDisabled = true
+    logoText = "~"
+    logoHomeLink = "/"
+
+
+[[menu.main]]
+    identifier = "blog"
+    name       = "Blog"
+    url        = "/posts"
+
+
+[[menu.main]]
+    identifier = "projects"
+    name       = "Projects"
+    url        = "/projects"
+
+
+[[params.social]]
+    name = "github"
+    url = "https://github.com/Peter-Maguire"
+
+[[params.social]]
+    name = "linkedin"
+    url = "https://linkedin.com/in/peter-maguire"
+
+[[params.social]]
+    name = "discord"
+    url = "https://discord.com/users/139871249567318017"
+
+[[params.social]]
+    name = "email"
+    url  = "mailto:me@petermaguire.xyz"
