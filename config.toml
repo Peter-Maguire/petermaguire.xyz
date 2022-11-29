@@ -41,11 +41,17 @@ paginate = 10
     name       = "Blog"
     url        = "/posts"
 
+[[menu.main]]
+    identifier = "work"
+    name       = "CV"
+    url        = "/work"
 
 [[menu.main]]
     identifier = "projects"
     name       = "Projects"
     url        = "/projects"
+
+
 
 
 [[params.social]]
