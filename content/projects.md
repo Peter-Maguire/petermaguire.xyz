@@ -19,7 +19,13 @@ Ethan is a Discord currency bot for RP servers.
 - Based on the framework built for OcelotBOT.
 - Used in ~600 servers.
 - Hosted on Docker Swarm.
-    
+
+## Discord Report Powertools
+_2022 - Present_  
+A browser script designed to make reporting on Discord easier.  
+- Written in Vanilla JS.  
+- Adds preset report content to Discord's reporting.
+
 ## Petify    
 _2016 - 2017_  
 Petify was a Spotify clone made for playing locally hosted music.
@@ -37,7 +43,6 @@ Petermon was a smart home platform with an emphasis on being able to write compl
 - Ingested data from a mobile phone.  
 - Automation creation with triggers, conditions and actions within the browser.
 - Used an Arduino to control physical devices via 433mhz wireless.
-  
 
 ---
 
