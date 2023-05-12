@@ -39,7 +39,7 @@ But when I loaded up the decompiled app, I didn't see the format I would expect.
         java.lang.String r9 = r9.toString()
 ```
 
-Googling `libtosprotection` [seems to point](https://www.sobyte.net/post/2021-11/apk-decompile/) to being an APK protection system created by Tencent.
+Googling `libtosprotection` [seems to point](https://www.sobyte.net/post/2021-11/apk-decompile/) to it being an APK protection system created by Tencent.
 There doesn't seem to be much research out there about this with most links being completely in Chinese and 
 I certainly am not skilled enough to figure this out, so it was back to the drawing board. 
 
@@ -229,8 +229,8 @@ _*Sony USB has sub-types which I haven't fully explored, they don't appear to af
 # Heartbeat Format
 The heartbeat uses a different format from the normal messages:  
 ```
-Magic Len  ???? Inc 00 Mode Lock Unknown
-243e  0c00 1815 08  00 01   80   0000000000000000
+Magic Len  ???? Inc 00 Mode Lock ???????      CRC
+243e  0c00 1815 08  00 01   80   5010c2010000 984b
 ```
 
 The format starts similar, but lacks a command ID or call/response argument. I haven't figured out much about this one, yet.  
