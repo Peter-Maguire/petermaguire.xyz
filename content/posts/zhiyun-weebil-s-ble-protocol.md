@@ -223,7 +223,9 @@ These are the commands I have figured out so far, some of these I am certain abo
 | `0a` | rcam      |
 | `0b` | bmpcc     |
 | `0c` | Sigma     |
-| `e0` | Sony USB* |  
+| `e0` | Sony USB* |    
+  
+
 _*Sony USB has sub-types which I haven't fully explored, they don't appear to affect the ID._
 
 # Heartbeat Format
