@@ -51,9 +51,6 @@ paginate = 10
     name       = "Projects"
     url        = "/projects"
 
-
-
-
 [[params.social]]
     name = "github"
     url = "https://github.com/Peter-Maguire"
@@ -65,6 +62,10 @@ paginate = 10
 [[params.social]]
     name = "discord"
     url = "https://discord.com/users/139871249567318017"
+
+[[params.social]]
+    name = "hackerone"
+    url  = "https://hackerone.com"
 
 [[params.social]]
     name = "email"
