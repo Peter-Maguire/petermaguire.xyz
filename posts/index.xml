@@ -373,12 +373,9 @@ Both the gimbal and app generate CRCs for commands/responses, however only the g
 <td><code>e0</code></td>
 <td>Sony USB*</td>
 </tr>
-<tr>
-<td><em>*Sony USB has sub-types which I haven&rsquo;t fully explored, they don&rsquo;t appear to affect the ID.</em></td>
-<td></td>
-</tr>
 </tbody>
 </table>
+<p><em>*Sony USB has sub-types which I haven&rsquo;t fully explored, they don&rsquo;t appear to affect the ID.</em></p>
 <h1 id="heartbeat-format">Heartbeat Format</h1>
 <p>The heartbeat uses a different format from the normal messages:</p>
 <pre tabindex="0"><code>Magic Len  ???? Inc 00 Mode Lock ???????      CRC
