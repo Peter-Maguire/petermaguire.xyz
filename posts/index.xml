@@ -1,4 +1,512 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Peter Maguire</title><link>https://petermaguire.xyz/posts/</link><description>Recent content in Posts on Peter Maguire</description><generator>Hugo -- gohugo.io</generator><language>en-gb</language><copyright>&amp;copy; 2022 Peter Maguire</copyright><lastBuildDate>Sat, 19 Nov 2022 17:47:26 +0000</lastBuildDate><atom:link href="https://petermaguire.xyz/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Epsilon Stealer Malware Analysis</title><link>https://petermaguire.xyz/posts/epsilon-stealer-analysis/</link><pubDate>Sat, 19 Nov 2022 17:47:26 +0000</pubDate><guid>https://petermaguire.xyz/posts/epsilon-stealer-analysis/</guid><description>Spread Epsilon generally spreads via the game tester scam. The victim is prompted to try out a game from an itch.io link. The download generally contains an archive, usually RAR, which has a password. The password will be given to the victim via Discord, this is to try and evade automated scanning/execution by anyone other than the victim.
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Peter Maguire</title><link>https://petermaguire.xyz/posts/</link><description>Recent content in Posts on Peter Maguire</description><generator>Hugo -- gohugo.io</generator><language>en-gb</language><copyright>&amp;copy; 2022 Peter Maguire</copyright><lastBuildDate>Tue, 11 Apr 2023 00:13:27 +0100</lastBuildDate><atom:link href="https://petermaguire.xyz/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Zhiyun Weebil-S BLE Protocol</title><link>https://petermaguire.xyz/posts/zhiyun-weebil-s-ble-protocol/</link><pubDate>Tue, 11 Apr 2023 00:13:27 +0100</pubDate><guid>https://petermaguire.xyz/posts/zhiyun-weebil-s-ble-protocol/</guid><description>Introduction The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389. It can be controlled either from the device itself or with a companion app on your phone via bluetooth. I purchased mine from ebay at a very reasonable price but with a defect, the onboard controls don&amp;rsquo;t work so you are required to use the app to control it.
+The App The ZY Play app is available for iOS or Android, via the Play Store or via a direct APK download from the site.</description><content type="html"><![CDATA[<h1 id="introduction">Introduction</h1>
+<p>The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389.
+It can be controlled either from the device itself or with a companion app on your phone via bluetooth.
+I purchased mine from ebay at a very reasonable price but with a defect, the onboard controls don&rsquo;t work so you are required to use the app to control it.</p>
+<h1 id="the-app">The App</h1>
+<p>The ZY Play app is available for iOS or Android, via the Play Store or via a direct APK download from the site.</p>
+<p><figure><img src="/img/gimbal/zyplay.png"/><figcaption>
+            <h4>The ZY Play download page</h4>
+        </figcaption>
+</figure>
+
+<figure><img src="/img/gimbal/app.png"/><figcaption>
+            <h4>The ZY Play app</h4>
+        </figcaption>
+</figure>
+</p>
+<p>The app is quite disappointing.
+Whilst it allows for all the controls available onboard and even adds some timelapse functionality, the interface is
+difficult to use and the joystick control is essentially unusable because of how small it is.
+I felt like there was missing potential here, and after reading <a href="https://jcjc-dev.com/2023/03/19/reversing-domyos-el500-elliptical/">this blog post</a> about BLE reverse engineering I decided to give it a try myself.</p>
+<p>My first step was to attempt to decompile the app using the APK they helpfully provide on their site in the hopes that I could extract the bluetooth protocol from there.
+But when I loaded up the decompiled app, I didn&rsquo;t see the format I would expect. Instead, I saw a sparsely populated &ldquo;WrapperProxyApplication&rdquo; and references to a <code>libtosprotection</code>:</p>
+<pre tabindex="0"><code>        java.lang.StringBuilder r9 = new java.lang.StringBuilder
+        r9.&lt;init&gt;()
+        java.lang.String r10 = &quot;libtosprotection.&quot;
+        r9.append(r10)
+        java.lang.String r10 = CPUABI
+        r9.append(r10)
+        java.lang.String r10 = &quot;.so&quot;
+        r9.append(r10)
+        java.lang.String r9 = r9.toString()
+</code></pre><p>Googling <code>libtosprotection</code> <a href="https://www.sobyte.net/post/2021-11/apk-decompile/">seems to point</a> to it being an APK protection system created by Tencent.
+There doesn&rsquo;t seem to be much research out there about this with most links being completely in Chinese and
+I certainly am not skilled enough to figure this out, so it was back to the drawing board.</p>
+<h1 id="bluetooth-hci-snoop">Bluetooth HCI Snoop</h1>
+<p>I returned to the <a href="https://jcjc-dev.com/2023/03/19/reversing-domyos-el500-elliptical/">blog post</a> from earlier and noticed the references to the Bluetooth HCI snoop log on Android.
+I enabled the logging in the developer options and started the app, connected to the gimbal and did some movements.
+I downloaded the log via ADB and opened it up in Wireshark.</p>
+<p>I have barely any experience with Wireshark, especially not with Bluetooth so opening the file was quite intimidating.
+I scrolled until I saw the first communications with the gimbal and attempted to understand what I was looking at.
+After sifting through dozens of lines of communication setup, I finally got to a section where a clear command/response pattern was emerging.</p>
+<figure><img src="/img/gimbal/wireshark.png"/><figcaption>
+            <h4>Bluetooth logs in Wireshark</h4>
+        </figcaption>
+</figure>
+
+<p>I started to copy the values into a text file to see if I could deduce a pattern:</p>
+<pre tabindex="0"><code>Sent: 243c080018120101020000006f76
+Recv: 243e0800181201100200330507d8
+
+Sent: 243c08001812020104000000169f
+Recv: 243e0800181202100400cf007737
+
+Sent: 243c0800181203010500000002ac
+Recv: 243e08001812031005000800a08b
+
+Sent: 243c080018120401020000006e35
+Recv: 243e08001812041002003305069b
+</code></pre><p>Immediately it was clear that there is a fixed start, a byte which increments by 1 each time, then some data:</p>
+<pre tabindex="0"><code>Fixed        Inc 01 Cmd ??????????
+243c08001812 03  01 05  00000002ac
+243c08001812 04  01 02  0000006e35
+</code></pre><p>After the increment, <code>01</code> seemed to indicate a command, and <code>10</code> a response,
+the next byte I hypothesised would be a command ID since it was the same in both the command and response.</p>
+<p>At this point, I thought I may have enough to attempt to send some commands to the gimbal using <a href="https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp&amp;hl=en&amp;gl=US">nRF Connect</a>.
+Naively picking out commands and sending them to the gimbal didn&rsquo;t seem to have any effect, at which point I went back to the Wireshark and saw data which complicated things:</p>
+<pre tabindex="0"><code>Value: 243e0c001815080001805010c2010000984b
+Value: 243c08001812370101100008b58d243c080018123801021000086ad3
+</code></pre><p>This data broke multiple rules of my hypothesised format, it was clear that this was not going to be easy to understand without knowing more information about when the commands are sent.</p>
+<h1 id="making-a-fake-gimbal">Making a fake gimbal</h1>
+<p>If I couldn&rsquo;t fake the app, then maybe I could fake the gimbal and get the app to connect to me.
+This would allow me to read commands as buttons are pressed and send data back to validate the format.<br>
+For this, I chose to use Node.js with <a href="https://github.com/noble/bleno">bleno</a> to act as a BLE peripheral.</p>
+<figure><img src="/img/gimbal/nrf.png"/><figcaption>
+            <h4>The gimbal&#39;s bluetooth signature</h4>
+        </figcaption>
+</figure>
+
+<p>I opened nRF Connect to attempt to replicate the services and characteristics from the gimbal and quickly setup a fake version of the gimbal in bleno:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">bleno</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;bleno&#39;</span>);
+<span style="color:#66d9ef">const</span> <span style="color:#a6e22e">userDescription</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">bleno</span>.<span style="color:#a6e22e">Descriptor</span>({
+    <span style="color:#a6e22e">uuid</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;2901&#39;</span>
+});
+
+<span style="color:#a6e22e">bleno</span>.<span style="color:#a6e22e">on</span>(<span style="color:#e6db74">&#39;stateChange&#39;</span>, (<span style="color:#a6e22e">state</span>)=&gt;{
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#a6e22e">state</span>);
+    <span style="color:#66d9ef">if</span>(<span style="color:#a6e22e">state</span> <span style="color:#f92672">===</span> <span style="color:#e6db74">&#34;poweredOn&#34;</span>){
+        <span style="color:#a6e22e">bleno</span>.<span style="color:#a6e22e">startAdvertising</span>(<span style="color:#e6db74">&#34;WEEBIL_S_9E9F&#34;</span>);
+        <span style="color:#a6e22e">bleno</span>.<span style="color:#a6e22e">setServices</span>(<span style="color:#66d9ef">new</span> <span style="color:#a6e22e">bleno</span>.<span style="color:#a6e22e">PrimaryService</span>({
+            <span style="color:#a6e22e">uuid</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;fee9&#39;</span>,
+            <span style="color:#a6e22e">characteristics</span><span style="color:#f92672">:</span> [
+                <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">bleno</span>.<span style="color:#a6e22e">Characteristic</span>({
+                    <span style="color:#a6e22e">uuid</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;d44bc439abfd45a2b575925416129600&#39;</span>,
+                    <span style="color:#a6e22e">properties</span><span style="color:#f92672">:</span> [<span style="color:#e6db74">&#39;writeWithoutResponse&#39;</span>],
+                    <span style="color:#a6e22e">onWriteRequest</span>,
+                    <span style="color:#a6e22e">descriptors</span><span style="color:#f92672">:</span> [<span style="color:#a6e22e">userDescription</span>]
+                }),
+                <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">bleno</span>.<span style="color:#a6e22e">Characteristic</span>({
+                    <span style="color:#a6e22e">uuid</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;d44bc439abfd45a2b575925416129601&#39;</span>,
+                    <span style="color:#a6e22e">properties</span><span style="color:#f92672">:</span> [<span style="color:#e6db74">&#39;notify&#39;</span>],
+                    <span style="color:#a6e22e">onReadRequest</span>,
+                    <span style="color:#a6e22e">onSubscribe</span>,
+                    <span style="color:#a6e22e">descriptors</span><span style="color:#f92672">:</span> [<span style="color:#a6e22e">userDescription</span>]
+                }),
+            ]
+        }))
+    }
+});
+</code></pre></div><p>But when I opened the ZY Play app, it wouldn&rsquo;t detect the &ldquo;gimbal&rdquo;. Puzzled, I returned to nRF connect to spot the difference:</p>
+<figure><img src="/img/gimbal/fakegimbal.png"/><figcaption>
+            <h4>Missing fields on the fake gimbal</h4>
+        </figcaption>
+</figure>
+
+<p>The characteristics and services checked out completely, but the fake gimbal was missing the &ldquo;Manufacturer Data&rdquo; and &ldquo;Complete Local Name&rdquo; fields.
+Bleno did not seem to support adding either of those fields so I dug into the bleno code to see if it was possible to add.
+Internally, <code>startAdvertising</code> created a buffer containing the device name and other advertising data and passed it to <code>startAdvertisingWithEIRData</code>.
+Reading the docs I had initially dismissed this function as the docs state it is only available on Linux and I was running this on Windows.
+Since <code>startAdvertising</code> just passed directly into the function, it must be supported on Windows so I copied the raw data from the fake gimbal
+and added the manufacturer data field from the real gimbal and tried advertising again.</p>
+<p>This time, I could see the app attempt to connect to my fake gimbal, repeat the same message 5 times and then disconnect with an error message on the app.
+This was good, as it meant I had a starting point. The app was clearly looking for a response and timed out when it didn&rsquo;t get it after a number of retries.
+All I had to do was find the response to that command from the Wireshark and return the same responses.</p>
+<h1 id="deciphering-commands">Deciphering commands</h1>
+<p>At this point, I had a fake gimbal that the app could connect to, I just had to figure out the format for commands, then map each function on the app to a command.</p>
+<p>After much tribulation, I came up with this rough format for commands:</p>
+<pre tabindex="0"><code>Magic Len  ???? Inc 01 Cmd Data   CRC
+243c  0800 1812 01  01 02  000000 6f76
+</code></pre><p>Each packet starts with the magic bytes <code>24 3c</code>. A single bluetooth transmission can sometimes contain more or less than one whole packet,
+which is where the length argument is useful. The length is 2 bytes long and is Big-Endian, meaning that this packet has <code>0x0008</code> more bytes,
+followed by 2 more bytes for the CRC.</p>
+<p>The next 2 bytes still remain a mystery to me, but for almost all packets I have seen this has been <code>0x1812</code>, except for the heartbeat message which is <code>0x1815</code>.
+I believe this may be some kind of format identifier as the heartbeat message does not follow the format described here.</p>
+<p>Next up is a single byte increment value, which is incremented independently for each command and response.
+The app does not seem to require validate these, but the gimbal will ignore commands with duplicate increments.</p>
+<p>The next byte is always <code>0x01</code> when sent from the app to the gimbal, and <code>0x10</code> when sent from the gimbal to the app.</p>
+<p>The next byte is the command ID, followed by (usually) 3 bytes of arbitrary data.
+The length of this data is dictated by the remaining length from the length argument earlier.
+See the table below for known commands and their data argument structure.</p>
+<p>The last 2 bytes contains a XMODEM CRC-16 which is calculated from after the end of the length argument to the end of the data argument.<br>
+Both the gimbal and app generate CRCs for commands/responses, however only the gimbal will ignore messages with an incorrect CRC.</p>
+<h1 id="command-ids">Command IDs</h1>
+<p>These are the commands I have figured out so far, some of these I am certain about, some I&rsquo;m not sure.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Meaning</th>
+<th>Input Arg</th>
+<th>Output Arg</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01</code></td>
+<td>Tilt</td>
+<td><code>10 c2</code> followed by <code>01</code> for forward, <code>11</code> for reverse</td>
+<td>No Response</td>
+<td>Moves the Tilt axis a tiny bit</td>
+</tr>
+<tr>
+<td><code>02</code></td>
+<td>Pan</td>
+<td><code>10 c2</code> followed by <code>01</code> for forward, <code>11</code> for reverse</td>
+<td>No Response</td>
+<td>Moves the Pan axis a tiny bit</td>
+</tr>
+<tr>
+<td><code>03</code></td>
+<td>Roll</td>
+<td><code>10 c2</code> followed by <code>01</code> for forward, <code>11</code> for reverse</td>
+<td>No Response</td>
+<td>Moves the Roll axis a tiny bit</td>
+</tr>
+<tr>
+<td><code>04</code></td>
+<td>Get Software Version</td>
+<td>Zeroes</td>
+<td><code>00</code> followed by the software version multiplied by 100.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>06</code></td>
+<td>Get Battery Percentage/Set Tilt Pos</td>
+<td>Zeroes / <code>10</code> followed by a 2 byte position position value`</td>
+<td><code>00</code> followed by the battery level.</td>
+<td>For some reason both battery level and tilt pos are the same command. This doesn&rsquo;t happen anywhere else</td>
+</tr>
+<tr>
+<td><code>07</code></td>
+<td>Set Roll Pos</td>
+<td><code>10</code> followed by a 2 byte position position value`</td>
+<td>No Response</td>
+<td>Sets Roll axis to an exact angle.</td>
+</tr>
+<tr>
+<td><code>08</code></td>
+<td>Set Pan Pos</td>
+<td><code>10</code> followed by a 2 byte position position value`</td>
+<td>No Response</td>
+<td>Sets Pan axis to an exact angle.</td>
+</tr>
+<tr>
+<td><code>20</code></td>
+<td>Press Button</td>
+<td><code>c0 3c 00</code></td>
+<td>No Response</td>
+<td>Takes a photo/starts recording, other buttons may use the same format.</td>
+</tr>
+<tr>
+<td><code>22</code></td>
+<td>Read Tilt Position</td>
+<td>Zeroes</td>
+<td><code>00</code> followed by the Tilt position.</td>
+<td>Representation may be degrees/65535 but seems inconsistent.</td>
+</tr>
+<tr>
+<td><code>23</code></td>
+<td>Read Roll Position</td>
+<td>Zeroes</td>
+<td><code>00</code> followed by the Roll position.</td>
+<td>Representation may be degrees/65535 but seems inconsistent.</td>
+</tr>
+<tr>
+<td><code>24</code></td>
+<td>Read Pan Position</td>
+<td>Zeroes</td>
+<td><code>00</code> followed by the Pan position.</td>
+<td>Representation may be degrees/65535 but seems inconsistent.</td>
+</tr>
+<tr>
+<td><code>27</code></td>
+<td>Set Mode</td>
+<td><code>80</code> followed by mode ID (see notes), followed by <code>00</code></td>
+<td>No Response</td>
+<td>PF = <code>00</code>, L = <code>01</code>, F = <code>02</code>, POV = <code>03</code>, GO = <code>04</code></td>
+</tr>
+<tr>
+<td><code>7c</code></td>
+<td>Get Serial 1</td>
+<td>Zeroes</td>
+<td><code>00</code> followed by part of the serial number.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>7f</code></td>
+<td>Get Serial 2</td>
+<td>Zeroes</td>
+<td><code>00</code> followed by part of the serial number.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>7d</code></td>
+<td>Get Serial 3</td>
+<td>Zeroes</td>
+<td><code>00</code> followed by part of the serial number.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>7e</code></td>
+<td>Get Serial 4</td>
+<td>Zeroes</td>
+<td><code>00</code> followed by part of the serial number.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>61</code></td>
+<td>Set Pan Smoothing</td>
+<td>???</td>
+<td>No Response</td>
+<td>Something to do with smoothing settings</td>
+</tr>
+<tr>
+<td><code>62</code></td>
+<td>Set Tilt Smoothing</td>
+<td>???</td>
+<td>No Response</td>
+<td>Something to do with smoothing settings</td>
+</tr>
+<tr>
+<td><code>63</code></td>
+<td>Set Roll Smoothing</td>
+<td>???</td>
+<td>No Response</td>
+<td>Something to do with smoothing settings</td>
+</tr>
+<tr>
+<td><code>68</code></td>
+<td>Get Camera Brand</td>
+<td>Zeroes</td>
+<td><code>00</code> followed by the camera brand ID, see below table.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>70</code></td>
+<td>Sync Motion Tilt Amount</td>
+<td>???</td>
+<td>No Response</td>
+<td>Used to set Tilt sensitivity for Sync Motion</td>
+</tr>
+<tr>
+<td><code>71</code></td>
+<td>Sync Motion Roll Amount</td>
+<td>???</td>
+<td>No Response</td>
+<td>Used to set Roll sensitivity for Sync Motion</td>
+</tr>
+<tr>
+<td><code>72</code></td>
+<td>Sync Motion Pan Amount</td>
+<td>???</td>
+<td>No Response</td>
+<td>Used to set Pan sensitivity for Sync Motion</td>
+</tr>
+</tbody>
+</table>
+<h2 id="camera-brands">Camera Brands</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Brand</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>00</code></td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>01</code></td>
+<td>Canon</td>
+</tr>
+<tr>
+<td><code>02</code></td>
+<td>Sony</td>
+</tr>
+<tr>
+<td><code>03</code></td>
+<td>Panasonic</td>
+</tr>
+<tr>
+<td><code>04</code></td>
+<td>Nikon</td>
+</tr>
+<tr>
+<td><code>05</code></td>
+<td>CCS</td>
+</tr>
+<tr>
+<td><code>06</code></td>
+<td>Fuji</td>
+</tr>
+<tr>
+<td><code>07</code></td>
+<td>Olympus</td>
+</tr>
+<tr>
+<td><code>0a</code></td>
+<td>rcam</td>
+</tr>
+<tr>
+<td><code>0b</code></td>
+<td>bmpcc</td>
+</tr>
+<tr>
+<td><code>0c</code></td>
+<td>Sigma</td>
+</tr>
+<tr>
+<td><code>e0</code></td>
+<td>Sony USB*</td>
+</tr>
+<tr>
+<td><em>*Sony USB has sub-types which I haven&rsquo;t fully explored, they don&rsquo;t appear to affect the ID.</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h1 id="heartbeat-format">Heartbeat Format</h1>
+<p>The heartbeat uses a different format from the normal messages:</p>
+<pre tabindex="0"><code>Magic Len  ???? Inc 00 Mode Lock ???????      CRC
+243e  0c00 1815 08  00 01   80   5010c2010000 984b
+</code></pre><p>The format starts similar, but lacks a command ID or call/response argument. I haven&rsquo;t figured out much about this one, yet.</p>
+<p>The first byte of data is the mode, this is the same mode ID as used by command <code>0x27</code> - Set Mode.</p>
+<p>The second byte is set to <code>0x80</code> when AXIS LOCK is triggered. I believe it may also change value for other states, such as sleep mode.</p>
+]]></content></item><item><title>BbyStealer Analysis</title><link>https://petermaguire.xyz/posts/bbystealer-analysis/</link><pubDate>Wed, 07 Dec 2022 22:10:14 +0000</pubDate><guid>https://petermaguire.xyz/posts/bbystealer-analysis/</guid><description>BbyStealer is one of the most prevalent information stealing malware that exists on Discord today. It has been around since approximately December 2021 and has evolved several times. This article focuses on the version from December 2022, but may make references to older versions where appropriate.
+Spread BbyStealer is sold as Malware as a Service, so the spread varies depending on the individual malicious actor (called &amp;ldquo;operators&amp;rdquo; for the rest of this article).</description><content type="html"><![CDATA[<p>BbyStealer is one of the most prevalent information stealing malware that exists on Discord today.
+It has been around since approximately December 2021 and has evolved several times.
+This article focuses on the version from December 2022, but may make references to older versions where appropriate.</p>
+<h2 id="spread">Spread</h2>
+<p>BbyStealer is sold as Malware as a Service, so the spread varies depending on the individual malicious actor (called &ldquo;operators&rdquo; for the rest of this article).
+Generally, this malware comes through as the &ldquo;game tester&rdquo; scam, but has been seen before being advertised as a &ldquo;Nitro generator&rdquo; or &ldquo;Discord Beta&rdquo;.</p>
+<figure><img src="/img/bby/spread-beta.png"/><figcaption>
+            <h4>The &#39;Beta&#39; and &#39;Game Tester&#39; scams, commonly used by BbyStealer.</h4>
+        </figcaption>
+</figure>
+
+<p>The malware is often distributed as a RAR file with a password which is usually supplied to the user as a &ldquo;beta key&rdquo;.
+This is to evade automatic detection or analysis.</p>
+<p>Once the RAR file is opened, a single file often called <code>Setup.exe</code> is inside. This file usually has the same icon each time.</p>
+<figure><img src="/img/bby/icons.png"/><figcaption>
+            <h4>Some of the commonly used icons and names.</h4>
+        </figcaption>
+</figure>
+
+<h2 id="infection">Infection</h2>
+<p>Once launched, BbyStealer wastes no time with displaying anything to the user and simply immediately kills any open Browser or Discord windows.<br>
+Browser cookies, autofill and saved passwords are then stolen and a payload is injected into the Discord client.
+This payload is obfuscated, and contains two additional obfuscated payloads within it.</p>
+<p>There does not appear to be any persistence other than through the payload inserted into the Discord program.</p>
+<h2 id="information-gathering">Information Gathering</h2>
+<h3 id="discord">Discord</h3>
+<p>The malware extracts information from Discord by hooking into the electron <a href="https://www.electronjs.org/docs/latest/api/web-request#webrequestoncompletedfilter-listener">onCompleted</a> event.
+This event allows a script to execute on completion of a request to a specified array of possible URLs. The URLs supplied are as follows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">[
+    <span style="color:#e6db74">&#34;https://discord.com/api/v*/users/@me&#34;</span>,
+    <span style="color:#e6db74">&#34;https://discordapp.com/api/v*/users/@me&#34;</span>,
+    <span style="color:#e6db74">&#34;https://*.discord.com/api/v*/users/@me&#34;</span>,
+    <span style="color:#e6db74">&#34;https://discord.com/api/v*/users/@me/mfa/totp/enable&#34;</span>,
+    <span style="color:#e6db74">&#34;https://discordapp.com/api/v*/users/@me/mfa/totp/enable&#34;</span>,
+    <span style="color:#e6db74">&#34;https://*.discord.com/api/v*/users/@me/mfa/totp/enable&#34;</span>,
+    <span style="color:#e6db74">&#34;https://discordapp.com/api/v*/auth/login&#34;</span>,
+    <span style="color:#e6db74">&#34;https://discord.com/api/v*/auth/login&#34;</span>,
+    <span style="color:#e6db74">&#34;https://*.discord.com/api/v*/auth/login&#34;</span>,
+    <span style="color:#e6db74">&#34;https://api.stripe.com/v*/tokens&#34;</span>
+]
+</code></pre></div><p>Note that this method of extracting information completely bypasses Discord&rsquo;s token encryption, because the token must be in its insecure form in order to be sent as part of the API request.<br>
+The data either sent to or returned from the above URLs are transformed into data which is exfiltrated via the API.</p>
+<p>In addition to the token, each event sends the following information:</p>
+<h3 id="login">login</h3>
+<p>This event is sent for all URLs ending with <code>login</code>, and extracts the <code>password</code> field from the request.</p>
+<h3 id="enabled2fa">enabled2FA</h3>
+<p>Sent when the <code>totp/enable</code> request is made, includes the TOTP secret and account password.</p>
+<h3 id="changedemail">changedEmail</h3>
+<p>Sent when a PATCH request is sent to <code>users/@me</code> which includes an <code>email</code> and <code>password</code> field. Sends the <code>email</code> and <code>password</code> fields from the request.</p>
+<h3 id="changedpassword">changedPassword</h3>
+<p>Sent when a PATCH request is sent to <code>users/@me</code> which includes a <code>new_password</code> and <code>password</code> field. Sends the <code>new_password</code> and <code>password</code> fields from the request.</p>
+<h3 id="cardadded">cardAdded</h3>
+<p>Sent for the lone stripe URL in the array, includes all card info sent to stripe, including card number, cvc, name, etc.</p>
+<p>Any accounts logged in via the account switcher also have their token stolen.</p>
+<h3 id="qr-login">QR Login</h3>
+<p>The QR login is tampered with, overriding the normal QR code display and replacing it with a QR code supplied by a websocket connection to <code>wearenotbbystealer.nl</code>.<br>
+Once connected, the websocket sends a &lsquo;welcome&rsquo; event to the client:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;action&#34;</span>: <span style="color:#e6db74">&#34;welcome&#34;</span>
+}
+</code></pre></div><p>In response, the websocket is expecting a &lsquo;key&rsquo; event, containing the operators key:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;action&#34;</span>: <span style="color:#e6db74">&#34;key&#34;</span>,
+    <span style="color:#f92672">&#34;key&#34;</span>: <span style="color:#e6db74">&#34;[the key]&#34;</span>
+}
+</code></pre></div><p>If all goes well, the websocket will periodically update the QR code, as if it were legitimate:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;action&#34;</span>: <span style="color:#e6db74">&#34;qrcode&#34;</span>,
+    <span style="color:#f92672">&#34;qrcode&#34;</span>: <span style="color:#e6db74">&#34;[a QR code URI]&#34;</span>
+}
+</code></pre></div><p>This technique is used to gain access to the users account even if they choose to login via QR, which with other malware may be a more secure option.<br>
+Thankfully, they added a <code>title</code> element to the QR code when hovered over to tell you what&rsquo;s going on:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">    &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;qrCode-2R7t9S&#34;</span> <span style="color:#a6e22e">title</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Oh nice! bby steal your account&#34;</span>/&gt;
+</code></pre></div><h2 id="api">API</h2>
+<p>Unlike many simpler information stealers, BbyStealer does not use a webhook directly. Instead, there are multiple C2 (Command and Control)
+servers which serve as a relay for information from the malware creator to the individual customers Discord server.
+This also allows the malware creator to take a copy of information that is stolen for themselves, a technique known as &ldquo;dualhooking&rdquo;.</p>
+<p>As of December 2022, the current C2 uses the following domains:</p>
+<ul>
+<li><code>t4ck0wsvvpbmktxzluyee11uce27kbct.nl</code></li>
+<li><code>kqnfkpoccicxiudstqonfotuwsrhuxkwhqjjfsbjhonoubrccy.nl</code></li>
+<li><code>wearenotbbystealer.nl</code></li>
+</ul>
+<p>The following domains have been used in the past, but are no longer active or are dormant:</p>
+<ul>
+<li><code>mdvksublbpczqluqvvbytfprxdwakuke.nl</code></li>
+<li><code>indianboatparty.com</code></li>
+<li><code>blackboat.party</code></li>
+<li><code>superfuniestindianparty.rip</code></li>
+<li><code>superfurrycdn.nl</code></li>
+<li><code>bbystealer.wtf</code></li>
+<li><code>bbystealer.in</code></li>
+<li><code>bbystealer.rip</code></li>
+<li><code>bbynetwork.nl</code></li>
+<li><code>bby.gg</code> / <code>socket.bby.gg</code></li>
+<li><code>bby.sex</code></li>
+<li><code>bby.rip</code></li>
+<li><code>bby.solutions</code></li>
+<li><code>weloveponysuwu.org</code></li>
+</ul>
+<p>BbyStealer&rsquo;s authentication revolves around &ldquo;keys&rdquo;. These are randomly generated strings which are assigned to an operator and map in the backend to a Discord webhook.
+Previously, operators have been seen to have &lsquo;vanity&rsquo; keys, or keys prefixed with <code>FREE-</code> denoting a limited feature version of the malware.</p>
+<h3 id="endpoints">Endpoints</h3>
+<p>In previous versions of the malware distinct endpoints have been used, each prefixed with the operators key.
+In the current version, a single POST request to <code>/:key</code> is used with the <code>type</code> field (See <a href="#information-gathering">the Discord section</a> for type names) dictating what type of data is being sent.<br>
+The endpoint expects data in the following format:</p>
+<pre tabindex="0"><code class="language-json5" data-lang="json5">{
+    &quot;data&quot;: {
+      // Depends on the `type` field
+    },
+    &quot;billing&quot;: {},
+    &quot;friends&quot;: [],
+    &quot;token&quot;: &quot;xyz&quot;,
+    &quot;type&quot;: &quot;login&quot;
+}
+</code></pre><h2 id="evasion">Evasion</h2>
+<p>As is common with these Discord-focussed malware strains, there is very little in the way of evasion.
+The malware code is obfuscated using 2 different obfuscators, although the obfuscation is easily reversed.
+The name of the malware is plastered all over the code, and even added into the Discord client.</p>
+]]></content></item><item><title>Epsilon Stealer Malware Analysis</title><link>https://petermaguire.xyz/posts/epsilon-stealer-analysis/</link><pubDate>Sat, 19 Nov 2022 17:47:26 +0000</pubDate><guid>https://petermaguire.xyz/posts/epsilon-stealer-analysis/</guid><description>Spread Epsilon generally spreads via the game tester scam. The victim is prompted to try out a game from an itch.io link. The download generally contains an archive, usually RAR, which has a password. The password will be given to the victim via Discord, this is to try and evade automated scanning/execution by anyone other than the victim.
 An example DM a victim would receive Infection Once the victim has downloaded the archive and extracted it, they will be faced with a Unity game.</description><content type="html"><![CDATA[<h2 id="spread">Spread</h2>
 <p>Epsilon generally spreads via the game tester scam.
 The victim is prompted to try out a game from an itch.io link. The download generally contains an archive, usually RAR, which has a password.
@@ -46,48 +554,48 @@ and only serves to convince the victim that the attacker&rsquo;s request was leg
 <h4 id="chromium-data">Chromium Data</h4>
 <p>Epsilon looks for Chromium data in the following locations, corresponding to Discord, Chrome, Operate, Brave, Yandex, Edge and Vivaldi install locations.
 Paths containing {number} are iterated over 5 times, substituting {number} with a number 1-5.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">appData</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">env</span>.<span style="color:#a6e22e">APPDATA</span>; <span style="color:#75715e">// Default: C:\Users\[username]\AppData\Roaming
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">env</span>.<span style="color:#a6e22e">LOCALAPPDATA</span>; <span style="color:#75715e">// Default: C:\Users\[username]\AppData\Local
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> <span style="color:#a6e22e">chromiumPaths</span> <span style="color:#f92672">=</span> [
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discord\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordcanary\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordptb\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discorddevelopment\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\lightcord\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Default\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Guest Profile\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Default\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Guest Profile\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera Stable\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera GX Stable\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera Stable\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera GX Stable\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Default\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Guest Profile\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Default\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Guest Profile\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Guest Profile\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Guest Profile\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Default\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Guest Profile\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Default\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Guest Profile\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Default\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Guest Profile\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Default\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Guest Profile\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Profile {number}\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Profile {number}\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Profile {number}\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Profile {number}\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Profile {number}\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Profile {number}\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Profile {number}\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Profile {number}\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Profile {number}\\Network\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Profile {number}\\Network\\&#34;</span>
-</span></span><span style="display:flex;"><span>];
-</span></span></code></pre></div><p>The malware iterates over the list multiple times to extract the following information, skipping over the paths which contain the phrase <code>cord</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">appData</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">env</span>.<span style="color:#a6e22e">APPDATA</span>; <span style="color:#75715e">// Default: C:\Users\[username]\AppData\Roaming
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">env</span>.<span style="color:#a6e22e">LOCALAPPDATA</span>; <span style="color:#75715e">// Default: C:\Users\[username]\AppData\Local
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> <span style="color:#a6e22e">chromiumPaths</span> <span style="color:#f92672">=</span> [
+    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discord\\&#34;</span>,
+    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordcanary\\&#34;</span>,
+    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordptb\\&#34;</span>,
+    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discorddevelopment\\&#34;</span>,
+    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\lightcord\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Default\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Guest Profile\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Default\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Guest Profile\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera Stable\\&#34;</span>,
+    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera GX Stable\\&#34;</span>,
+    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera Stable\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">appData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Opera Software\\Opera GX Stable\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Default\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Guest Profile\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Default\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Guest Profile\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Guest Profile\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Guest Profile\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Default\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Guest Profile\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Default\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Guest Profile\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Default\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Guest Profile\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Default\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Guest Profile\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Profile {number}\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Profile {number}\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Profile {number}\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Profile {number}\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Profile {number}\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Google\\Chrome\\User Data\\Profile {number}\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\BraveSoftware\\Brave-Browser\\User Data\\Profile {number}\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Yandex\\YandexBrowser\\User Data\\Profile {number}\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Microsoft\\Edge\\User Data\\Profile {number}\\Network\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Vivaldi\\User Data\\Profile {number}\\Network\\&#34;</span>
+];
+</code></pre></div><p>The malware iterates over the list multiple times to extract the following information, skipping over the paths which contain the phrase <code>cord</code>:</p>
 <ul>
 <li>Cookies</li>
 <li>Saved Passwords</li>
@@ -136,14 +644,14 @@ Interestingly, no attempt is made to extract Discord tokens from Firefox.</p>
 </ul>
 <p>Epsilon downloads and injects a payload into the Discord client which is used for further data extraction.
 The following paths are checked for a Discord installation:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">discordPaths</span> <span style="color:#f92672">=</span> [
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discord\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordcanary\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordptb\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discorddevelopment\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\lightcord\\&#34;</span>
-</span></span><span style="display:flex;"><span>];
-</span></span></code></pre></div><p>If a Discord installation is found, it then attempts to <a href="https://en.wikipedia.org/wiki/Glob_(programming)">glob</a> match a file with the path
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">discordPaths</span> <span style="color:#f92672">=</span> [
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discord\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordcanary\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discordptb\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\discorddevelopment\\&#34;</span>,
+    <span style="color:#a6e22e">localAppData</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\lightcord\\&#34;</span>
+];
+</code></pre></div><p>If a Discord installation is found, it then attempts to <a href="https://en.wikipedia.org/wiki/Glob_(programming)">glob</a> match a file with the path
 <code>\app-*\modules\discord_desktop_core-*\discord_desktop_core\index.js</code>. This path corresponds to a plaintext JS file which is executed before the Discord client is initialised,
 and is usually contains a single line. Epsilon downloads a payload from a paste service and overwrites <code>index.js</code> with the contents of the paste.
 A directory is also made called <code>Epsilon-Stealer</code> as a crude way of signalling that the injection is successful. This is a common practise in stealers,
@@ -151,21 +659,21 @@ and in most the presence of this directory is checked for in order to decide whe
 <p>The presence of BetterDiscord is also checked for and, if found, BetterDiscord&rsquo;s &lsquo;webhook protection&rsquo; feature is
 disabled by overwriting the string <code>api/webhooks</code> with <code>vulsa1111</code> in <code>\BetterDiscord\data\betterdiscord.asar</code></p>
 <p>The following paths are also checked for a file which contains the phrase <code>discord_backup_codes</code>, presumably hoping to find a file containing 2FA backup codes.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#66d9ef">let</span> <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">env</span>.<span style="color:#a6e22e">USERPROFILE</span>;
-</span></span><span style="display:flex;"><span><span style="color:#a6e22e">userPaths</span> <span style="color:#f92672">=</span> [
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Desktop\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Downloads\\&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Documents\\&#34;</span>
-</span></span><span style="display:flex;"><span>];
-</span></span></code></pre></div><h4 id="cryptocurrency">Cryptocurrency</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#66d9ef">let</span> <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">process</span>.<span style="color:#a6e22e">env</span>.<span style="color:#a6e22e">USERPROFILE</span>;
+<span style="color:#a6e22e">userPaths</span> <span style="color:#f92672">=</span> [
+    <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Desktop\\&#34;</span>,
+    <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Downloads\\&#34;</span>,
+    <span style="color:#a6e22e">userProfile</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\\Documents\\&#34;</span>
+];
+</code></pre></div><h4 id="cryptocurrency">Cryptocurrency</h4>
 <p>Each non-discord chromium path is checked for the following extensions, and the data is extracted from each:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\nkbihfbeogaeaoehlefnkodbefgpgknn&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Metamask&#34;</span>;
-</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\bfnaelmomeimhlpmgjnjophhpkkoljpa&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Phantom&#34;</span>;
-</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\fhbohimaelbohpjbbldcngcnapndodjp&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Binance&#34;</span>;
-</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\hnfanknocfeofbddgcijnmhnfnkdnaad&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Coinbase&#34;</span>;
-</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\aeachknmefphepccionboohckonoeemg&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Coin98&#34;</span>;
-</span></span><span style="display:flex;"><span><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\hifafgmccdpekplomjjkcfgodnhcellj&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Crypto_com&#34;</span>;
-</span></span></code></pre></div><p><code>%APPDATA%\Exodus\exodus.wallet</code> is also checked for and extracted.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\nkbihfbeogaeaoehlefnkodbefgpgknn&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Metamask&#34;</span>;
+<span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\bfnaelmomeimhlpmgjnjophhpkkoljpa&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Phantom&#34;</span>;
+<span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\fhbohimaelbohpjbbldcngcnapndodjp&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Binance&#34;</span>;
+<span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\hnfanknocfeofbddgcijnmhnfnkdnaad&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Coinbase&#34;</span>;
+<span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\aeachknmefphepccionboohckonoeemg&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Coin98&#34;</span>;
+<span style="color:#a6e22e">cryptoExtensions</span>[<span style="color:#e6db74">&#34;Local Extension Settings\\hifafgmccdpekplomjjkcfgodnhcellj&#34;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Crypto_com&#34;</span>;
+</code></pre></div><p><code>%APPDATA%\Exodus\exodus.wallet</code> is also checked for and extracted.</p>
 <p>The data for Crypto wallets is stored in <code>[temp dir]\epsilon-[username]\Wallets</code>.</p>
 <h4 id="telegram">Telegram</h4>
 <p>Epsilon checks for the existence of <code>%APPDATA%\Telegram Desktop\tdata</code>, lists all sub-dirs and files and:</p>

@@ -1,0 +1,293 @@
+<!doctype html><html lang=en>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="ie=edge">
+<meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no">
+<meta name=author content>
+<meta name=description content="BbyStealer is one of the most prevalent information stealing malware that exists on Discord today. It has been around since approximately December 2021 and has evolved several times. This article focuses on the version from December 2022, but may make references to older versions where appropriate.
+Spread BbyStealer is sold as Malware as a Service, so the spread varies depending on the individual malicious actor (called &amp;ldquo;operators&amp;rdquo; for the rest of this article).">
+<meta name=keywords content="homepage,blog,malware">
+<meta name=robots content="noodp">
+<meta name=theme-color content>
+<link rel=canonical href=https://petermaguire.xyz/posts/bbystealer-analysis/>
+<title>
+BbyStealer Analysis :: Peter Maguire
+</title>
+<link href=https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.5.0/css/flag-icon.min.css rel=stylesheet type=text/css>
+<link rel=stylesheet href=https://petermaguire.xyz/main.4e5c639214707eff609bb55fe49e183dee42258a73bc90e4cc7b0a84f900798a.css>
+<link rel=apple-touch-icon sizes=180x180 href=https://petermaguire.xyz/apple-touch-icon.png>
+<link rel=icon type=image/png sizes=32x32 href=https://petermaguire.xyz/favicon-32x32.png>
+<link rel=icon type=image/png sizes=16x16 href=https://petermaguire.xyz/favicon-16x16.png>
+<link rel=manifest href=https://petermaguire.xyz/site.webmanifest>
+<link rel=mask-icon href=https://petermaguire.xyz/safari-pinned-tab.svg color>
+<link rel="shortcut icon" href=https://petermaguire.xyz/favicon.ico>
+<meta name=msapplication-TileColor content>
+<meta itemprop=name content="BbyStealer Analysis">
+<meta itemprop=description content="BbyStealer is one of the most prevalent information stealing malware that exists on Discord today. It has been around since approximately December 2021 and has evolved several times. This article focuses on the version from December 2022, but may make references to older versions where appropriate.
+Spread BbyStealer is sold as Malware as a Service, so the spread varies depending on the individual malicious actor (called &ldquo;operators&rdquo; for the rest of this article)."><meta itemprop=datePublished content="2022-12-07T22:10:14+00:00">
+<meta itemprop=dateModified content="2022-12-07T22:10:14+00:00">
+<meta itemprop=wordCount content="906"><meta itemprop=image content="https://petermaguire.xyz/">
+<meta itemprop=keywords content="malware,">
+<meta name=twitter:card content="summary_large_image">
+<meta name=twitter:image content="https://petermaguire.xyz/">
+<meta name=twitter:title content="BbyStealer Analysis">
+<meta name=twitter:description content="BbyStealer is one of the most prevalent information stealing malware that exists on Discord today. It has been around since approximately December 2021 and has evolved several times. This article focuses on the version from December 2022, but may make references to older versions where appropriate.
+Spread BbyStealer is sold as Malware as a Service, so the spread varies depending on the individual malicious actor (called &ldquo;operators&rdquo; for the rest of this article).">
+<meta property="og:title" content="BbyStealer Analysis">
+<meta property="og:description" content="BbyStealer is one of the most prevalent information stealing malware that exists on Discord today. It has been around since approximately December 2021 and has evolved several times. This article focuses on the version from December 2022, but may make references to older versions where appropriate.
+Spread BbyStealer is sold as Malware as a Service, so the spread varies depending on the individual malicious actor (called &ldquo;operators&rdquo; for the rest of this article).">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://petermaguire.xyz/posts/bbystealer-analysis/"><meta property="og:image" content="https://petermaguire.xyz/"><meta property="article:section" content="posts">
+<meta property="article:published_time" content="2022-12-07T22:10:14+00:00">
+<meta property="article:modified_time" content="2022-12-07T22:10:14+00:00">
+<meta property="article:published_time" content="2022-12-07 22:10:14 +0000 UTC">
+</head>
+<body>
+<div class=container>
+<header class=header>
+<span class=header__inner>
+<a href=https://petermaguire.xyz/ style=text-decoration:none>
+<div class=logo>
+<span class=logo__mark>></span>
+<span class=logo__text>~</span>
+<span class=logo__cursor style=visibility:hidden>
+</span>
+</div>
+</a>
+<span class=header__right>
+<nav class=menu>
+<ul class=menu__inner><li><a href=https://petermaguire.xyz/posts>Blog</a></li><li><a href=https://petermaguire.xyz/work>CV</a></li><li><a href=https://petermaguire.xyz/projects>Projects</a></li>
+</ul>
+</nav>
+<span class=menu-trigger><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+</span>
+</span>
+</span>
+</header>
+<div class=content>
+<main class=post>
+<div class=post-info>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+5 minutes
+</p>
+</div>
+<article>
+<h1 class=post-title>
+<a href=https://petermaguire.xyz/posts/bbystealer-analysis/>BbyStealer Analysis</a>
+</h1>
+<div class=post-content>
+<p>BbyStealer is one of the most prevalent information stealing malware that exists on Discord today.
+It has been around since approximately December 2021 and has evolved several times.
+This article focuses on the version from December 2022, but may make references to older versions where appropriate.</p>
+<h2 id=spread>Spread</h2>
+<p>BbyStealer is sold as Malware as a Service, so the spread varies depending on the individual malicious actor (called &ldquo;operators&rdquo; for the rest of this article).
+Generally, this malware comes through as the &ldquo;game tester&rdquo; scam, but has been seen before being advertised as a &ldquo;Nitro generator&rdquo; or &ldquo;Discord Beta&rdquo;.</p>
+<figure><img src=https://petermaguire.xyz/img/bby/spread-beta.png><figcaption>
+<h4>The 'Beta' and 'Game Tester' scams, commonly used by BbyStealer.</h4>
+</figcaption>
+</figure>
+<p>The malware is often distributed as a RAR file with a password which is usually supplied to the user as a &ldquo;beta key&rdquo;.
+This is to evade automatic detection or analysis.</p>
+<p>Once the RAR file is opened, a single file often called <code>Setup.exe</code> is inside. This file usually has the same icon each time.</p>
+<figure><img src=https://petermaguire.xyz/img/bby/icons.png><figcaption>
+<h4>Some of the commonly used icons and names.</h4>
+</figcaption>
+</figure>
+<h2 id=infection>Infection</h2>
+<p>Once launched, BbyStealer wastes no time with displaying anything to the user and simply immediately kills any open Browser or Discord windows.<br>
+Browser cookies, autofill and saved passwords are then stolen and a payload is injected into the Discord client.
+This payload is obfuscated, and contains two additional obfuscated payloads within it.</p>
+<p>There does not appear to be any persistence other than through the payload inserted into the Discord program.</p>
+<h2 id=information-gathering>Information Gathering</h2>
+<h3 id=discord>Discord</h3>
+<p>The malware extracts information from Discord by hooking into the electron <a href=https://www.electronjs.org/docs/latest/api/web-request#webrequestoncompletedfilter-listener>onCompleted</a> event.
+This event allows a script to execute on completion of a request to a specified array of possible URLs. The URLs supplied are as follows:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json>[
+    <span style=color:#e6db74>&#34;https://discord.com/api/v*/users/@me&#34;</span>,
+    <span style=color:#e6db74>&#34;https://discordapp.com/api/v*/users/@me&#34;</span>,
+    <span style=color:#e6db74>&#34;https://*.discord.com/api/v*/users/@me&#34;</span>,
+    <span style=color:#e6db74>&#34;https://discord.com/api/v*/users/@me/mfa/totp/enable&#34;</span>,
+    <span style=color:#e6db74>&#34;https://discordapp.com/api/v*/users/@me/mfa/totp/enable&#34;</span>,
+    <span style=color:#e6db74>&#34;https://*.discord.com/api/v*/users/@me/mfa/totp/enable&#34;</span>,
+    <span style=color:#e6db74>&#34;https://discordapp.com/api/v*/auth/login&#34;</span>,
+    <span style=color:#e6db74>&#34;https://discord.com/api/v*/auth/login&#34;</span>,
+    <span style=color:#e6db74>&#34;https://*.discord.com/api/v*/auth/login&#34;</span>,
+    <span style=color:#e6db74>&#34;https://api.stripe.com/v*/tokens&#34;</span>
+]
+</code></pre></div><p>Note that this method of extracting information completely bypasses Discord&rsquo;s token encryption, because the token must be in its insecure form in order to be sent as part of the API request.<br>
+The data either sent to or returned from the above URLs are transformed into data which is exfiltrated via the API.</p>
+<p>In addition to the token, each event sends the following information:</p>
+<h3 id=login>login</h3>
+<p>This event is sent for all URLs ending with <code>login</code>, and extracts the <code>password</code> field from the request.</p>
+<h3 id=enabled2fa>enabled2FA</h3>
+<p>Sent when the <code>totp/enable</code> request is made, includes the TOTP secret and account password.</p>
+<h3 id=changedemail>changedEmail</h3>
+<p>Sent when a PATCH request is sent to <code>users/@me</code> which includes an <code>email</code> and <code>password</code> field. Sends the <code>email</code> and <code>password</code> fields from the request.</p>
+<h3 id=changedpassword>changedPassword</h3>
+<p>Sent when a PATCH request is sent to <code>users/@me</code> which includes a <code>new_password</code> and <code>password</code> field. Sends the <code>new_password</code> and <code>password</code> fields from the request.</p>
+<h3 id=cardadded>cardAdded</h3>
+<p>Sent for the lone stripe URL in the array, includes all card info sent to stripe, including card number, cvc, name, etc.</p>
+<p>Any accounts logged in via the account switcher also have their token stolen.</p>
+<h3 id=qr-login>QR Login</h3>
+<p>The QR login is tampered with, overriding the normal QR code display and replacing it with a QR code supplied by a websocket connection to <code>wearenotbbystealer.nl</code>.<br>
+Once connected, the websocket sends a &lsquo;welcome&rsquo; event to the client:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json>{
+    <span style=color:#f92672>&#34;action&#34;</span>: <span style=color:#e6db74>&#34;welcome&#34;</span>
+}
+</code></pre></div><p>In response, the websocket is expecting a &lsquo;key&rsquo; event, containing the operators key:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json>{
+    <span style=color:#f92672>&#34;action&#34;</span>: <span style=color:#e6db74>&#34;key&#34;</span>,
+    <span style=color:#f92672>&#34;key&#34;</span>: <span style=color:#e6db74>&#34;[the key]&#34;</span>
+}
+</code></pre></div><p>If all goes well, the websocket will periodically update the QR code, as if it were legitimate:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json>{
+    <span style=color:#f92672>&#34;action&#34;</span>: <span style=color:#e6db74>&#34;qrcode&#34;</span>,
+    <span style=color:#f92672>&#34;qrcode&#34;</span>: <span style=color:#e6db74>&#34;[a QR code URI]&#34;</span>
+}
+</code></pre></div><p>This technique is used to gain access to the users account even if they choose to login via QR, which with other malware may be a more secure option.<br>
+Thankfully, they added a <code>title</code> element to the QR code when hovered over to tell you what&rsquo;s going on:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-html data-lang=html>    &lt;<span style=color:#f92672>div</span> <span style=color:#a6e22e>class</span><span style=color:#f92672>=</span><span style=color:#e6db74>&#34;qrCode-2R7t9S&#34;</span> <span style=color:#a6e22e>title</span><span style=color:#f92672>=</span><span style=color:#e6db74>&#34;Oh nice! bby steal your account&#34;</span>/&gt;
+</code></pre></div><h2 id=api>API</h2>
+<p>Unlike many simpler information stealers, BbyStealer does not use a webhook directly. Instead, there are multiple C2 (Command and Control)
+servers which serve as a relay for information from the malware creator to the individual customers Discord server.
+This also allows the malware creator to take a copy of information that is stolen for themselves, a technique known as &ldquo;dualhooking&rdquo;.</p>
+<p>As of December 2022, the current C2 uses the following domains:</p>
+<ul>
+<li><code>t4ck0wsvvpbmktxzluyee11uce27kbct.nl</code></li>
+<li><code>kqnfkpoccicxiudstqonfotuwsrhuxkwhqjjfsbjhonoubrccy.nl</code></li>
+<li><code>wearenotbbystealer.nl</code></li>
+</ul>
+<p>The following domains have been used in the past, but are no longer active or are dormant:</p>
+<ul>
+<li><code>mdvksublbpczqluqvvbytfprxdwakuke.nl</code></li>
+<li><code>indianboatparty.com</code></li>
+<li><code>blackboat.party</code></li>
+<li><code>superfuniestindianparty.rip</code></li>
+<li><code>superfurrycdn.nl</code></li>
+<li><code>bbystealer.wtf</code></li>
+<li><code>bbystealer.in</code></li>
+<li><code>bbystealer.rip</code></li>
+<li><code>bbynetwork.nl</code></li>
+<li><code>bby.gg</code> / <code>socket.bby.gg</code></li>
+<li><code>bby.sex</code></li>
+<li><code>bby.rip</code></li>
+<li><code>bby.solutions</code></li>
+<li><code>weloveponysuwu.org</code></li>
+</ul>
+<p>BbyStealer&rsquo;s authentication revolves around &ldquo;keys&rdquo;. These are randomly generated strings which are assigned to an operator and map in the backend to a Discord webhook.
+Previously, operators have been seen to have &lsquo;vanity&rsquo; keys, or keys prefixed with <code>FREE-</code> denoting a limited feature version of the malware.</p>
+<h3 id=endpoints>Endpoints</h3>
+<p>In previous versions of the malware distinct endpoints have been used, each prefixed with the operators key.
+In the current version, a single POST request to <code>/:key</code> is used with the <code>type</code> field (See <a href=#information-gathering>the Discord section</a> for type names) dictating what type of data is being sent.<br>
+The endpoint expects data in the following format:</p>
+<pre tabindex=0><code class=language-json5 data-lang=json5>{
+    &quot;data&quot;: {
+      // Depends on the `type` field
+    },
+    &quot;billing&quot;: {},
+    &quot;friends&quot;: [],
+    &quot;token&quot;: &quot;xyz&quot;,
+    &quot;type&quot;: &quot;login&quot;
+}
+</code></pre><h2 id=evasion>Evasion</h2>
+<p>As is common with these Discord-focussed malware strains, there is very little in the way of evasion.
+The malware code is obfuscated using 2 different obfuscators, although the obfuscation is easily reversed.
+The name of the malware is plastered all over the code, and even added into the Discord client.</p>
+</div>
+</article>
+<hr>
+<div class=post-info>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83.0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7" y2="7"/></svg>
+<span class=tag><a href=https://petermaguire.xyz/tags/malware/>malware</a></span>
+</p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6A2 2 0 004 4v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+906 Words
+</p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+2022-12-07 22:10
+</p>
+</div>
+<hr>
+<div class=sharing-buttons>
+<a class=resp-sharing-button__link href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f" target=_blank rel=noopener aria-label title="Share on facebook">
+<div class="resp-sharing-button resp-sharing-button--facebook resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://twitter.com/intent/tweet/?url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f" target=_blank rel=noopener aria-label title="Share on twitter">
+<div class="resp-sharing-button resp-sharing-button--twitter resp-sharing-button--small">
+<div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9.0 01-3.14 1.53 4.48 4.48.0 00-7.86 3v1A10.66 10.66.0 013 4s-4 9 5 13a11.64 11.64.0 01-7 2c9 5 20 0 20-11.5a4.5 4.5.0 00-.08-.83A7.72 7.72.0 0023 3z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://www.tumblr.com/widgets/share/tool?posttype=link&title=BbyStealer%20Analysis&caption=BbyStealer%20Analysis&canonicalUrl=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f" target=_blank rel=noopener aria-label title="Share on tumblr">
+<div class="resp-sharing-button resp-sharing-button--tumblr resp-sharing-button--small">
+<div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.563 24c-5.093.0-7.031-3.756-7.031-6.411V9.747H5.116V6.648c3.63-1.313 4.512-4.596 4.71-6.469C9.84.051 9.941.0 9.999.0h3.517v6.114h4.801v3.633h-4.82v7.47c.016 1.001.375 2.371 2.207 2.371h.09c.631-.02 1.486-.205 1.936-.419l1.156 3.425c-.436.636-2.4 1.374-4.156 1.404h-.178l.011.002z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="mailto:?subject=BbyStealer%20Analysis&body=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f" target=_self rel=noopener aria-label title="Share via email">
+<div class="resp-sharing-button resp-sharing-button--email resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1.0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1.0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://pinterest.com/pin/create/button/?url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f&media=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f;description=BbyStealer%20Analysis" target=_blank rel=noopener aria-label title="Share on pinterest">
+<div class="resp-sharing-button resp-sharing-button--pinterest resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none"><path d="M12.017.0C5.396.0.029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024.0 1.518.769 1.518 1.688.0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128.0 3.768-2.245 3.768-5.487.0-2.861-2.063-4.869-5.008-4.869-3.41.0-5.409 2.562-5.409 5.199.0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646.0-3.776 2.748-7.252 7.92-7.252 4.158.0 7.392 2.967 7.392 6.923.0 4.135-2.607 7.462-6.233 7.462-1.214.0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607.0 11.985-5.365 11.985-11.987C23.97 5.39 18.592.026 11.985.026L12.017.0z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://www.linkedin.com/shareArticle?mini=true&url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f&title=BbyStealer%20Analysis&summary=BbyStealer%20Analysis&source=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f" target=_blank rel=noopener aria-label title="Share on linkedin">
+<div class="resp-sharing-button resp-sharing-button--linkedin resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://reddit.com/submit/?url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f&resubmit=true&title=BbyStealer%20Analysis" target=_blank rel=noopener aria-label title="Share on reddit">
+<div class="resp-sharing-button resp-sharing-button--reddit resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none"><path d="M12 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm5.01 4.744c.688.0 1.25.561 1.25 1.249a1.25 1.25.0 01-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968.0 1.754.786 1.754 1.754.0.716-.435 1.333-1.01 1.614a3.111 3.111.0 01.042.52c0 2.694-3.13 4.87-7.004 4.87s-7.004-2.176-7.004-4.87c0-.183.015-.366.043-.534A1.748 1.748.0 014.028 12c0-.968.786-1.754 1.754-1.754.463.0.898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342.0 01.14-.197.35.35.0 01.238-.042l2.906.617a1.214 1.214.0 011.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687.0 1.248-.561 1.248-1.249S9.937 12 9.249 12zm5.5.0c-.687.0-1.248.561-1.248 1.25.0.687.561 1.248 1.249 1.248S16 13.937 16 13.249c0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327.0 00-.231.094.33.33.0 000 .463c.842.842 2.484.913 2.961.913s2.105-.056 2.961-.913a.361.361.0 00.029-.463.33.33.0 00-.464.0c-.547.533-1.684.73-2.512.73-.828.0-1.979-.196-2.512-.73a.326.326.0 00-.232-.095z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://www.xing.com/app/user?op=share;url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f;title=BbyStealer%20Analysis" target=_blank rel=noopener aria-label title="Share on xing">
+<div class="resp-sharing-button resp-sharing-button--xing resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none"><path d="M18.188.0c-.517.0-.741.325-.927.66.0.0-7.455 13.224-7.702 13.657.015.024 4.919 9.023 4.919 9.023.17.308.436.66.967.66h3.454c.211.0.375-.078.463-.22.089-.151.089-.346-.009-.536l-4.879-8.916c-.004-.006-.004-.016.0-.022L22.139.756c.095-.191.097-.387.006-.535C22.056.078 21.894.0 21.686.0h-3.498zM3.648 4.74c-.211.0-.385.074-.473.216-.09.149-.078.339.02.531l2.34 4.05c.004.01.004.016.0.021L1.86 16.051c-.099.188-.093.381.0.529.085.142.239.234.45.234h3.461c.518.0.766-.348.945-.667l3.734-6.609-2.378-4.155c-.172-.315-.434-.659-.962-.659H3.648v.016z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="whatsapp://send?text=BbyStealer%20Analysis%20https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f" target=_blank rel=noopener aria-label title="Share on whatsapp">
+<div class="resp-sharing-button resp-sharing-button--whatsapp resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198.0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479.0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87.0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86.0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64.0 5.122 1.03 6.988 2.898a9.825 9.825.0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815.0 0012.05.0C5.495.0.16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882.0 005.683 1.448h.005c6.554.0 11.89-5.335 11.893-11.893a11.821 11.821.0 00-3.48-8.413z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f&t=BbyStealer%20Analysis" target=_blank rel=noopener aria-label title="Share on hacker news">
+<div class="resp-sharing-button resp-sharing-button--hackernews resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none"><path d="M0 24V0h24v24H0zM6.951 5.896l4.112 7.708v5.064h1.583v-4.972l4.148-7.799h-1.749l-2.457 4.875c-.372.745-.688 1.434-.688 1.434s-.297-.708-.651-1.434L8.831 5.896h-1.88z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://telegram.me/share/url?text=BbyStealer%20Analysis&url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fbbystealer-analysis%2f" target=_blank rel=noopener aria-label title="Share on telegram">
+<div class="resp-sharing-button resp-sharing-button--telegram resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+</div>
+</div>
+</a>
+</div>
+<div class=pagination>
+<div class=pagination__buttons>
+<span class="button previous">
+<a href=https://petermaguire.xyz/posts/zhiyun-weebil-s-ble-protocol/>
+<span class=button__icon>←</span>
+<span class=button__text>Zhiyun Weebil-S BLE Protocol</span>
+</a>
+</span>
+<span class="button next">
+<a href=https://petermaguire.xyz/posts/epsilon-stealer-analysis/>
+<span class=button__text>Epsilon Stealer Malware Analysis</span>
+<span class=button__icon>→</span>
+</a>
+</span>
+</div>
+</div>
+</main>
+</div>
+<footer class=footer>
+</footer>
+</div>
+<script type=text/javascript src=https://petermaguire.xyz/bundle.min.599099f1f14b78b657d524b28e10e0c5098e7cd46e9c7aed73d577068a276c3ff1bb234cbf29cb313333e83cf411727b43157c91ce5b809e2ffc81664614608e.js integrity="sha512-WZCZ8fFLeLZX1SSyjhDgxQmOfNRunHrtc9V3BoonbD/xuyNMvynLMTMz6Dz0EXJ7QxV8kc5bgJ4v/IFmRhRgjg=="></script>
+</body>
+</html>
