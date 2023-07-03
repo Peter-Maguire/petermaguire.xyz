@@ -2,7 +2,7 @@ baseURL = 'https://petermaguire.xyz/'
 languageCode = 'en-gb'
 title = 'Peter Maguire'
 theme = "hello-friend-ng"
-copyright = "&copy; 2022 Peter Maguire"
+copyright = "&copy; 2023 Peter Maguire"
 canonifyurls = true
 paginate = 10
 
@@ -60,12 +60,8 @@ paginate = 10
     url = "https://linkedin.com/in/peter-maguire"
 
 [[params.social]]
-    name = "discord"
-    url = "https://discord.com/users/139871249567318017"
-
-[[params.social]]
     name = "hackerone"
-    url  = "https://hackerone.com"
+    url  = "https://hackerone.com/unacceptableuse?type=user"
 
 [[params.social]]
     name = "email"

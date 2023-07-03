@@ -8,7 +8,7 @@ More information is available on my [LinkedIn](https://www.linkedin.com/in/peter
 
 ## Ably Realtime
 ### SDK Developer II
-_January 2022 - Present_
+_January 2022 - June 2023_
 - Working on Ably's public SDKs, primarily JS based.   
   
 ## Sportech  

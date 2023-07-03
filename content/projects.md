@@ -9,7 +9,7 @@ _2013 - Present_
 OcelotBOT is a multipurpose Discord bot aimed at servers with small groups of people.  
 
 - Written in JS, with some auxiliary services written in Go.  
-- Currently used by ~45,000 servers.   
+- Currently used by ~60,000 servers.   
 - ~1,000 Daily Active Users.
 - Hosted on Docker Swarm.
 
@@ -21,7 +21,7 @@ Ethan is a Discord currency bot for RP servers.
 - Hosted on Docker Swarm.
 
 ## Discord Report Powertools
-_2022 - Present_  
+_2022_  
 A browser script designed to make reporting on Discord easier.  
 - Written in Vanilla JS.  
 - Adds preset report content to Discord's reporting.
