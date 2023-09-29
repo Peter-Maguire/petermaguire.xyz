@@ -6,10 +6,15 @@ draft: false
 
 More information is available on my [LinkedIn](https://www.linkedin.com/in/peter-maguire/).
 
+## MachineMax
+### Backend Developer
+_June 2023 - Present_
+- Writing Go microservices
+
 ## Ably Realtime
 ### SDK Developer II
 _January 2022 - June 2023_
-- Working on Ably's public SDKs, primarily JS based.   
+- Worked on Ably's public SDKs, primarily JS based.   
   
 ## Sportech  
 ### Software Developer  
