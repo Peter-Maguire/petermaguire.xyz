@@ -4,8 +4,8 @@
 <meta http-equiv=x-ua-compatible content="ie=edge">
 <meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no">
 <meta name=author content>
-<meta name=description content="Introduction The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389. It can be controlled either from the device itself or with a companion app on your phone via bluetooth. I purchased mine from ebay at a very reasonable price but with a defect, the onboard controls don&amp;rsquo;t work so you are required to use the app to control it.
-The App The ZY Play app is available for iOS or Android, via the Play Store or via a direct APK download from the site.">
+<meta name=description content="Note: Source code for an example implementation is available here
+Introduction The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389. It can be controlled either from the device itself or with a companion app on your phone via bluetooth. I purchased mine from ebay at a very reasonable price but with a defect, the onboard controls don&amp;rsquo;t work so you are required to use the app to control it.">
 <meta name=keywords content="homepage,blog,untagged">
 <meta name=robots content="noodp">
 <meta name=theme-color content>
@@ -23,19 +23,19 @@ Zhiyun Weebil-S BLE Protocol :: Peter Maguire
 <link rel="shortcut icon" href=https://petermaguire.xyz/favicon.ico>
 <meta name=msapplication-TileColor content>
 <meta itemprop=name content="Zhiyun Weebil-S BLE Protocol">
-<meta itemprop=description content="Introduction The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389. It can be controlled either from the device itself or with a companion app on your phone via bluetooth. I purchased mine from ebay at a very reasonable price but with a defect, the onboard controls don&rsquo;t work so you are required to use the app to control it.
-The App The ZY Play app is available for iOS or Android, via the Play Store or via a direct APK download from the site."><meta itemprop=datePublished content="2023-04-11T00:13:27+01:00">
+<meta itemprop=description content="Note: Source code for an example implementation is available here
+Introduction The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389. It can be controlled either from the device itself or with a companion app on your phone via bluetooth. I purchased mine from ebay at a very reasonable price but with a defect, the onboard controls don&rsquo;t work so you are required to use the app to control it."><meta itemprop=datePublished content="2023-04-11T00:13:27+01:00">
 <meta itemprop=dateModified content="2023-04-11T00:13:27+01:00">
-<meta itemprop=wordCount content="1902"><meta itemprop=image content="https://petermaguire.xyz/">
+<meta itemprop=wordCount content="1912"><meta itemprop=image content="https://petermaguire.xyz/">
 <meta itemprop=keywords content="untagged,">
 <meta name=twitter:card content="summary_large_image">
 <meta name=twitter:image content="https://petermaguire.xyz/">
 <meta name=twitter:title content="Zhiyun Weebil-S BLE Protocol">
-<meta name=twitter:description content="Introduction The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389. It can be controlled either from the device itself or with a companion app on your phone via bluetooth. I purchased mine from ebay at a very reasonable price but with a defect, the onboard controls don&rsquo;t work so you are required to use the app to control it.
-The App The ZY Play app is available for iOS or Android, via the Play Store or via a direct APK download from the site.">
+<meta name=twitter:description content="Note: Source code for an example implementation is available here
+Introduction The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389. It can be controlled either from the device itself or with a companion app on your phone via bluetooth. I purchased mine from ebay at a very reasonable price but with a defect, the onboard controls don&rsquo;t work so you are required to use the app to control it.">
 <meta property="og:title" content="Zhiyun Weebil-S BLE Protocol">
-<meta property="og:description" content="Introduction The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389. It can be controlled either from the device itself or with a companion app on your phone via bluetooth. I purchased mine from ebay at a very reasonable price but with a defect, the onboard controls don&rsquo;t work so you are required to use the app to control it.
-The App The ZY Play app is available for iOS or Android, via the Play Store or via a direct APK download from the site.">
+<meta property="og:description" content="Note: Source code for an example implementation is available here
+Introduction The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389. It can be controlled either from the device itself or with a companion app on your phone via bluetooth. I purchased mine from ebay at a very reasonable price but with a defect, the onboard controls don&rsquo;t work so you are required to use the app to control it.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://petermaguire.xyz/posts/zhiyun-weebil-s-ble-protocol/"><meta property="og:image" content="https://petermaguire.xyz/"><meta property="article:section" content="posts">
 <meta property="article:published_time" content="2023-04-11T00:13:27+01:00">
@@ -76,6 +76,7 @@ The App The ZY Play app is available for iOS or Android, via the Play Store or v
 <a href=https://petermaguire.xyz/posts/zhiyun-weebil-s-ble-protocol/>Zhiyun Weebil-S BLE Protocol</a>
 </h1>
 <div class=post-content>
+<p><strong>Note: Source code for an example implementation is available <a href=https://github.com/Peter-Maguire/bleebil>here</a></strong></p>
 <h1 id=introduction>Introduction</h1>
 <p>The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389.
 It can be controlled either from the device itself or with a companion app on your phone via bluetooth.
@@ -464,7 +465,7 @@ Both the gimbal and app generate CRCs for commands/responses, however only the g
 <span class=tag><a href=https://petermaguire.xyz/tags/untagged/>untagged</a></span>
 </p>
 <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6A2 2 0 004 4v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-1902 Words
+1912 Words
 </p>
 <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
 2023-04-10 23:13
