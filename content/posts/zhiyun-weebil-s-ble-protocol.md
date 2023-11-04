@@ -8,6 +8,8 @@ tags:
   - untagged
 ---
 
+**Note: Source code for an example implementation is available [here](https://github.com/Peter-Maguire/bleebil)**
+
 # Introduction
 
 The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389.
