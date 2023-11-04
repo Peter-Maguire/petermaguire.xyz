@@ -1,4 +1,56 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Peter Maguire</title><link>https://petermaguire.xyz/posts/</link><description>Recent content in Posts on Peter Maguire</description><generator>Hugo -- gohugo.io</generator><language>en-gb</language><copyright>&amp;copy; 2023 Peter Maguire</copyright><lastBuildDate>Tue, 11 Apr 2023 00:13:27 +0100</lastBuildDate><atom:link href="https://petermaguire.xyz/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Zhiyun Weebil-S BLE Protocol</title><link>https://petermaguire.xyz/posts/zhiyun-weebil-s-ble-protocol/</link><pubDate>Tue, 11 Apr 2023 00:13:27 +0100</pubDate><guid>https://petermaguire.xyz/posts/zhiyun-weebil-s-ble-protocol/</guid><description>Note: Source code for an example implementation is available here
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Peter Maguire</title><link>https://petermaguire.xyz/posts/</link><description>Recent content in Posts on Peter Maguire</description><generator>Hugo -- gohugo.io</generator><language>en-gb</language><copyright>&amp;copy; 2023 Peter Maguire</copyright><lastBuildDate>Sat, 04 Nov 2023 16:05:57 +0000</lastBuildDate><atom:link href="https://petermaguire.xyz/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>What to do if you fall for the Game Tester Scam</title><link>https://petermaguire.xyz/posts/discord-hacked-help/</link><pubDate>Sat, 04 Nov 2023 16:05:57 +0000</pubDate><guid>https://petermaguire.xyz/posts/discord-hacked-help/</guid><description>Introduction This article should help you if you&amp;rsquo;ve fallen from the &amp;ldquo;test my game&amp;rdquo; scam on Discord. If you don&amp;rsquo;t know what that is, it&amp;rsquo;s outlined in these posts.
+Instructions Do not log back into Discord on your PC as this will give them your password. Right now, they only have temporary access to your account.
+If you have a second device that is still logged in such as a phone, change your password from that device as soon as you can.</description><content type="html"><![CDATA[<h1 id="introduction">Introduction</h1>
+<p>This article should help you if you&rsquo;ve fallen from the &ldquo;test my game&rdquo; scam on Discord.
+If you don&rsquo;t know what that is, it&rsquo;s outlined in <a href="epsilon-stealer-analysis">these</a> <a href="bbystealer-analysis">posts</a>.</p>
+<h1 id="instructions">Instructions</h1>
+<ol>
+<li><strong>Do not log back into Discord on your PC</strong> as this will give them your password.  Right now, they only have temporary access to your account.<br>
+If you have a second device that is still logged in such as a phone, change your password from that device as soon as you can.<br>
+This will kick them out of your account for now but there is more to do.</li>
+<li><strong>Change any passwords stored in Chrome, Firefox, etc</strong>. Again, do this from a separate device.
+The most important one to change is the password for the email associated with your Discord account as they may use that to change the email address of your account.
+The rest you can do whilst waiting for Discord to respond.</li>
+<li><strong>Contact Discord Support</strong>. Discord&rsquo;s <a href="https://dis.gd/support">support page</a> has a dropdown for if you&rsquo;ve been hacked.
+In the first dropdown select &ldquo;Hacked Account&rdquo;, then in the dropdown for &ldquo;Suspicion of how your account was compromised&rdquo; select &ldquo;I downloaded a file&rdquo;.
+Be patient in waiting for their response, as repeated messages or new tickets will put you to the back of the queue and the response will take longer.</li>
+<li><strong>Check your PC for suspicious startup files.</strong> Use <a href="https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns">Autoruns</a> to check for things you don&rsquo;t recognise and disable/remove them.
+Many of these malwares use generic sounding names like &ldquo;Game Launcher&rdquo; so keep an eye out for things like that.</li>
+<li><strong>Uninstall Discord from your PC</strong>. Most malware lives directly in your Discord installation, so before you can safely log back in you need to uninstall and reinstall Discord.</li>
+<li><strong>Report the domain that you were sent</strong>. You can report to <a href="https://phish.report">phish.report</a>, <a href="https://report.netcraft.com">Netcraft</a> or <a href="https://discord.gg/gmMdSSW8EQ">Vaccinator</a>. These will help stop others from getting hacked in the same way.</li>
+<li>(OPTIONAL, BUT RECOMMENDED) <strong>Reinstall Windows</strong>. I can&rsquo;t cover all bases here and malware changes all the time, if you want to guarantee that your PC is no longer infected, reinstall Windows.</li>
+</ol>
+<h1 id="faq">FAQ</h1>
+<p>You may be quite confused about what happened at this point, so this section may clear up some of those questions.</p>
+<h3 id="why-me">Why Me?</h3>
+<p>Normally they are not targeting specific people for any personal reason, it&rsquo;s usually about the number of badges you have or how &ldquo;rare&rdquo; your username is.
+Accounts like those are considered &ldquo;High Quality&rdquo; and sell for larger amounts. But it&rsquo;s not about making money for everyone, some people just want recognition or attention.</p>
+<h3 id="why-do-people-do-this">Why do people do this?</h3>
+<p>The people doing this are generally bored kids who think it&rsquo;s funny or clever or gets them some sort of &lsquo;clout&rsquo;. Normally they get bored after they realise they aren&rsquo;t Mr. Robot.</p>
+<h3 id="why-wont-discord-do-something-about-this">Why won&rsquo;t Discord do something about this?</h3>
+<p>In fairness to Discord, they have started taking this issue more seriously in recent times but they&rsquo;ve got a long way to go and there&rsquo;s some seemingly simple changes they could make to make this scam a lot more difficult.
+That being said, it&rsquo;s likely that it&rsquo;s just not a large enough problem to really register to them as a priority. They&rsquo;ve likely got much larger fires to put out first.</p>
+<h3 id="why-fake-games-specifically">Why fake games specifically?</h3>
+<p>Discord is primarily a gaming platform, so many people on the platform are willing to try out new games for people.
+A much bigger reason though is that the people who run these scams are not very inventive and just copy off the last person they saw doing it.
+This is why the &ldquo;games&rdquo; are often named very similarly and use almost identical websites.<br>
+That being said, there are some people who have tried different things - I&rsquo;ve seen everything from &ldquo;Free Nitro Generators&rdquo; to &ldquo;Roblox Cheats&rdquo;.</p>
+<h3 id="how-can-i-stop-this-from-happening-to-me-again">How can I stop this from happening to me again?</h3>
+<p>Once you&rsquo;ve seen this scam once, new people trying it are pretty easy to spot as they almost always follow the same pattern.
+I&rsquo;ve received hundreds of different iterations of this scam, and I have never once had someone ask me to try their game who is actually legit.
+Unless you are specifically in those circles, that kind of thing just doesn&rsquo;t really happen.</p>
+<p>However hard you try though, it is impossible to completely rule out the risk of falling for it or something more advanced. To reduce the impact, you can follow these steps:</p>
+<ol>
+<li>If you are able to, use <a href="https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/windows-sandbox-overview">Windows Sandbox</a> or a VM to
+run new programs or games that you don&rsquo;t trust. It will protect you from most malware and once you&rsquo;re done everything is wiped as soon as you close the window.</li>
+<li>Don&rsquo;t use the built-in Firefox or Chrome password managers as they aren&rsquo;t secure, use something like <a href="https://1password.com">1Password</a> or <a href="https://bitwarden.com">BitWarden</a> instead.
+Not only are these more secure, they are less often targeted by malware developers.</li>
+<li>Enable 2FA, and keep your backup codes stored somewhere safe. 2FA will make it much harder for hackers to gain persistent access to your account.
+Some malware searches for downloaded backup codes and steals them, so make sure you store them somewhere safe and secure, like a USB thumb drive.</li>
+<li>(ADVANCED) Change your Chrome data directory. This is only really required if you think you&rsquo;re at a high risk of falling for one of these, but it&rsquo;s possible to change where
+Chrome stores your browser history and cookies etc.</li>
+</ol>
+]]></content></item><item><title>Zhiyun Weebil-S BLE Protocol</title><link>https://petermaguire.xyz/posts/zhiyun-weebil-s-ble-protocol/</link><pubDate>Tue, 11 Apr 2023 00:13:27 +0100</pubDate><guid>https://petermaguire.xyz/posts/zhiyun-weebil-s-ble-protocol/</guid><description>Note: Source code for an example implementation is available here
 Introduction The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389. It can be controlled either from the device itself or with a companion app on your phone via bluetooth. I purchased mine from ebay at a very reasonable price but with a defect, the onboard controls don&amp;rsquo;t work so you are required to use the app to control it.</description><content type="html"><![CDATA[<p><strong>Note: Source code for an example implementation is available <a href="https://github.com/Peter-Maguire/bleebil">here</a></strong></p>
 <h1 id="introduction">Introduction</h1>
 <p>The Weebill-S is a mirrorless/DSLR camera gimbal made by Zhyiun that retails for around £389.
