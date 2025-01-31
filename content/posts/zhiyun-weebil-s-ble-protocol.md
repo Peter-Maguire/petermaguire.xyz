@@ -161,7 +161,7 @@ Magic Len  ???? Inc 01 Cmd Data   CRC
 ```
 
 Each packet starts with the magic bytes `24 3c`. A single bluetooth transmission can sometimes contain more or less than one whole packet,
-which is where the length argument is useful. The length is 2 bytes long and is Big-Endian, meaning that this packet has `0x0008` more bytes,
+which is where the length argument is useful. The length is 2 bytes long and is Little-Endian, meaning that this packet has `0x0008` more bytes,
 followed by 2 more bytes for the CRC.
 
 The next 2 bytes still remain a mystery to me, but for almost all packets I have seen this has been `0x1812`, except for the heartbeat message which is `0x1815`.
