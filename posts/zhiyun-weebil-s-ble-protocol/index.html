@@ -202,7 +202,7 @@ All I had to do was find the response to that command from the Wireshark and ret
 <pre tabindex=0><code>Magic Len  ???? Inc 01 Cmd Data   CRC
 243c  0800 1812 01  01 02  000000 6f76
 </code></pre><p>Each packet starts with the magic bytes <code>24 3c</code>. A single bluetooth transmission can sometimes contain more or less than one whole packet,
-which is where the length argument is useful. The length is 2 bytes long and is Big-Endian, meaning that this packet has <code>0x0008</code> more bytes,
+which is where the length argument is useful. The length is 2 bytes long and is Little-Endian, meaning that this packet has <code>0x0008</code> more bytes,
 followed by 2 more bytes for the CRC.</p>
 <p>The next 2 bytes still remain a mystery to me, but for almost all packets I have seen this has been <code>0x1812</code>, except for the heartbeat message which is <code>0x1815</code>.
 I believe this may be some kind of format identifier as the heartbeat message does not follow the format described here.</p>
