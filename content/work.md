@@ -8,16 +8,25 @@ More information is available on my [LinkedIn](https://www.linkedin.com/in/peter
 
 For non-professional experience, see [projects](/projects).
 
+
+# The Multiplayer Group
+### Senior Software Engineer ![](/icon/aws.png "AWS") ![](/icon/go.png "Golang")  
+_December 2023 - Present_
+- Co-dev studio working on multiplayer game backend services.
+- Primarily using AWS with microservices written in Go.
+
+
 ## MachineMax
 ### Backend Developer ![](/icon/gcp.png "Google Cloud") ![](/icon/go.png "Golang") ![](/icon/postgres.png "Postgres")
-_June 2023 - Present_
-- Writing Go microservices
+_June 2023 - December 2023_
+- Vehicle telematics system
+- Microservice backend written in Go
 
 ## Ably Realtime
-### SDK Developer II ![](/icon/js.png "Javascript") ![](/icon/react.png "React") ![](/icon/go.png "Golang") ![](/icon/aws.png "AWS") 
+### SDK Developer II  ![](/icon/aws.png "AWS") ![](/icon/js.png "Javascript") ![](/icon/react.png "React") ![](/icon/go.png "Golang")
 _January 2022 - June 2023_
 - Worked on Ably's public SDKs, primarily JS based.   
-- Lead development on brand new SDK ([Spaces SDK](https://ably.com/docs/products/spaces))
+- Lead development on brand new SDK ([Spaces SDK](https://ably.com/docs/products/spaces)).
   
 ## Sportech  
 ### Software Developer ![](/icon/gcp.png "Google Cloud") ![](/icon/go.png "Golang") ![](/icon/php.png "PHP") ![](/icon/react.png "React") ![](/icon/mysql.png "MySQL") ![](/icon/gl.png "GitLab")
