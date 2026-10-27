@@ -1,0 +1,557 @@
+<!doctype html><html lang=en>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="ie=edge">
+<meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no">
+<meta name=author content>
+<meta name=description content="Note: Source code for a Home Assistant integration built from this research is available here
+Introduction Huawei sells a range of Bluetooth body composition scales: the Scale 3, Scale 3 Pro, Scale 2 Pro, a few Honor-branded ones and some cheaper overseas models. They all work with the Huawei Health app, which pairs with the scale, sends it your age, height and sex, and pulls back your weight, body fat percentage and a pile of other numbers.">
+<meta name=keywords content="homepage,blog,reverse-engineering,bluetooth">
+<meta name=robots content="noodp">
+<meta name=theme-color content>
+<link rel=canonical href=https://petermaguire.xyz/posts/huawei-scale-ble-protocol/>
+<title>
+Reverse Engineering Huawei's Smart Scale Protocol :: Peter Maguire
+</title>
+<link href=https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.5.0/css/flag-icon.min.css rel=stylesheet type=text/css>
+<link rel=stylesheet href=https://petermaguire.xyz/main.4e5c639214707eff609bb55fe49e183dee42258a73bc90e4cc7b0a84f900798a.css>
+<link rel=apple-touch-icon sizes=180x180 href=https://petermaguire.xyz/apple-touch-icon.png>
+<link rel=icon type=image/png sizes=32x32 href=https://petermaguire.xyz/favicon-32x32.png>
+<link rel=icon type=image/png sizes=16x16 href=https://petermaguire.xyz/favicon-16x16.png>
+<link rel=manifest href=https://petermaguire.xyz/site.webmanifest>
+<link rel=mask-icon href=https://petermaguire.xyz/safari-pinned-tab.svg color>
+<link rel="shortcut icon" href=https://petermaguire.xyz/favicon.ico>
+<meta name=msapplication-TileColor content>
+<meta itemprop=name content="Reverse Engineering Huawei's Smart Scale Protocol">
+<meta itemprop=description content="Note: Source code for a Home Assistant integration built from this research is available here
+Introduction Huawei sells a range of Bluetooth body composition scales: the Scale 3, Scale 3 Pro, Scale 2 Pro, a few Honor-branded ones and some cheaper overseas models. They all work with the Huawei Health app, which pairs with the scale, sends it your age, height and sex, and pulls back your weight, body fat percentage and a pile of other numbers."><meta itemprop=datePublished content="2026-10-27T12:00:00+00:00">
+<meta itemprop=dateModified content="2026-10-27T12:00:00+00:00">
+<meta itemprop=wordCount content="2311"><meta itemprop=image content="https://petermaguire.xyz/">
+<meta itemprop=keywords content="reverse-engineering,bluetooth,">
+<meta name=twitter:card content="summary_large_image">
+<meta name=twitter:image content="https://petermaguire.xyz/">
+<meta name=twitter:title content="Reverse Engineering Huawei's Smart Scale Protocol">
+<meta name=twitter:description content="Note: Source code for a Home Assistant integration built from this research is available here
+Introduction Huawei sells a range of Bluetooth body composition scales: the Scale 3, Scale 3 Pro, Scale 2 Pro, a few Honor-branded ones and some cheaper overseas models. They all work with the Huawei Health app, which pairs with the scale, sends it your age, height and sex, and pulls back your weight, body fat percentage and a pile of other numbers.">
+<meta property="og:title" content="Reverse Engineering Huawei's Smart Scale Protocol">
+<meta property="og:description" content="Note: Source code for a Home Assistant integration built from this research is available here
+Introduction Huawei sells a range of Bluetooth body composition scales: the Scale 3, Scale 3 Pro, Scale 2 Pro, a few Honor-branded ones and some cheaper overseas models. They all work with the Huawei Health app, which pairs with the scale, sends it your age, height and sex, and pulls back your weight, body fat percentage and a pile of other numbers.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://petermaguire.xyz/posts/huawei-scale-ble-protocol/"><meta property="og:image" content="https://petermaguire.xyz/"><meta property="article:section" content="posts">
+<meta property="article:published_time" content="2026-10-27T12:00:00+00:00">
+<meta property="article:modified_time" content="2026-10-27T12:00:00+00:00">
+<meta property="article:published_time" content="2026-10-27 12:00:00 +0000 UTC">
+</head>
+<body>
+<div class=container>
+<header class=header>
+<span class=header__inner>
+<a href=https://petermaguire.xyz/ style=text-decoration:none>
+<div class=logo>
+<span class=logo__mark>></span>
+<span class=logo__text>~</span>
+<span class=logo__cursor style=visibility:hidden>
+</span>
+</div>
+</a>
+<span class=header__right>
+<nav class=menu>
+<ul class=menu__inner><li><a href=https://petermaguire.xyz/posts>Blog</a></li><li><a href=https://petermaguire.xyz/work>CV</a></li><li><a href=https://petermaguire.xyz/projects>Projects</a></li>
+</ul>
+</nav>
+<span class=menu-trigger><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+</span>
+</span>
+</span>
+</header>
+<div class=content>
+<main class=post>
+<div class=post-info>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+11 minutes
+</p>
+</div>
+<article>
+<h1 class=post-title>
+<a href=https://petermaguire.xyz/posts/huawei-scale-ble-protocol/>Reverse Engineering Huawei&rsquo;s Smart Scale Protocol</a>
+</h1>
+<div class=post-content>
+<p><strong>Note: Source code for a Home Assistant integration built from this research is available <a href=https://github.com/Peter-Maguire/hacs-huawei-scale>here</a></strong></p>
+<h1 id=introduction>Introduction</h1>
+<p>Huawei sells a range of Bluetooth body composition scales: the Scale 3, Scale 3 Pro, Scale 2 Pro, a few Honor-branded ones and some cheaper overseas models.
+They all work with the Huawei Health app, which pairs with the scale, sends it your age, height and sex, and pulls back your weight, body fat percentage and a pile of other numbers.</p>
+<p>I didn&rsquo;t want to install yet another app and get locked into an ecosystem just to use a set of scales.
+What I actually wanted was for the scales to keep a history by themselves, without me having to pull my phone out every time I stepped on them, and the obvious place for that is <a href=https://www.home-assistant.io/>Home Assistant</a>.
+So I needed to find out how the Huawei Health app talks to them.</p>
+<h1 id=the-app>The App</h1>
+<p>Huawei Health has been pulled from the Play Store, and these days the only way to get it is to download an APK directly from Huawei&rsquo;s website.
+That&rsquo;s not a great experience for anyone who just bought a scale, and it&rsquo;s a big part of why I wanted to avoid the app in the first place.
+It did mean I had an APK in my hands though, and unlike the <a href=https://petermaguire.xyz/posts/zhiyun-weebil-s-ble-protocol/>last time I tried this</a> it decompiled just fine.</p>
+<p>I ran Huawei Health (<code>com.huawei.health</code>) through <a href=https://github.com/skylot/jadx>jadx</a>.
+It&rsquo;s a big app, around 50 dex files, and most of the class names are obfuscated into things like <code>dqb</code> and <code>dpy</code>.
+The names I use below are ones I gave them after working out what they do.</p>
+<p>I started from the list of supported devices in <code>SupportDevices.xml</code>, which maps the BLE advertising name of a scale to a product:</p>
+<table>
+<thead>
+<tr>
+<th>BLE name contains</th>
+<th>Device</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Dobby</code>, <code>HUAWEI Scale 3 BLE-</code></td>
+<td>Huawei Scale 3</td>
+</tr>
+<tr>
+<td><code>Hagrid-B29</code>, <code>HUAWEI Scale 3 Pro-</code></td>
+<td>Huawei Scale 3 Pro</td>
+</tr>
+<tr>
+<td><code>HAG</code>, <code>HUAWEI Scale 2 Pro-</code></td>
+<td>Huawei Scale 2 Pro</td>
+</tr>
+<tr>
+<td><code>CH100</code> / <code>CH100S</code>, <code>CH18</code>, <code>AH100</code></td>
+<td>Huawei / Honor body-fat scales</td>
+</tr>
+<tr>
+<td><code>LUP-</code>, <code>AH111</code>, <code>HONOR Scale 2-</code></td>
+<td>Honor Scale 2</td>
+</tr>
+</tbody>
+</table>
+<p>Following those names through the code, it turned out there are two completely different protocols hiding behind the one app.</p>
+<h1 id=path-1-the-chipsea-scales>Path 1: The Chipsea Scales</h1>
+<p>The cheaper scales aren&rsquo;t really Huawei&rsquo;s at all.
+They use the Chipsea &ldquo;OKOK&rdquo; chipset, and the app bundles Chipsea&rsquo;s entire third party SDK (<code>com.careforeyou.library</code>) to talk to them.
+Huawei&rsquo;s own glue code is a small class that I&rsquo;d guess is called <code>ChipSeaMeasureController</code>.</p>
+<p>The most interesting thing about these scales is that you don&rsquo;t even need to connect to them.
+The scan doesn&rsquo;t filter on any service UUIDs, it just matches on MAC address or name afterwards, and a separate class parses weight, impedance and a &ldquo;lock&rdquo; flag (meaning the reading has settled) directly out of the manufacturer data in the advertisement.</p>
+<p>If you do connect, the GATT layout is:</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Characteristic</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fff0</code></td>
+<td><code>fff1</code></td>
+<td>Notify: live weight</td>
+</tr>
+<tr>
+<td><code>fff0</code></td>
+<td><code>fff2</code></td>
+<td>Write without response: commands to the scale</td>
+</tr>
+<tr>
+<td><code>181b</code></td>
+<td><code>2a9c</code></td>
+<td>Standard body composition measurement</td>
+</tr>
+<tr>
+<td><code>181b</code></td>
+<td><code>fa9c</code></td>
+<td>Custom: history</td>
+</tr>
+<tr>
+<td><code>1805</code></td>
+<td><code>2a08</code></td>
+<td>Date/time, used to sync the clock</td>
+</tr>
+</tbody>
+</table>
+<p>The SDK supports several protocol variants, picked by a factory based on the scale:</p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Frame header</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OKOK</td>
+<td><code>0xCA</code></td>
+<td>Command <code>0x10</code> is a live frame with fat, water, muscle, BMR, visceral fat and bone as 16-bit values. <code>0x11</code> is weight, history or user match.</td>
+</tr>
+<tr>
+<td>OKOKCloud</td>
+<td><code>0x02 0x00</code>, <code>0x06 0x03</code>, <code>0x06 0x23</code></td>
+<td>Impedance at bytes 9-10</td>
+</tr>
+<tr>
+<td>OKOKCloudV3/V4</td>
+<td><code>0xC0</code>, <code>0xC4</code>, <code>0xC5</code>, <code>0xC8</code></td>
+<td>Impedance at bytes 8-9 (x0.1), and optional 5 segment impedance in <code>0xC8</code></td>
+</tr>
+</tbody>
+</table>
+<p>On the Cloud variants the scale only sends weight and impedance, and the body fat figures are calculated somewhere else.
+I didn&rsquo;t trace whether that is the app or Huawei&rsquo;s servers.</p>
+<p>Weight is decoded in one place, and a units byte decides whether you&rsquo;re looking at kg, jin (multiply by 0.5), pounds (multiply by 0.4535924) or stones and pounds.</p>
+<p>Going the other way, the app sends the scale a 20 byte frame which sets the clock and the user profile in one go:</p>
+<pre tabindex=0><code>CA 10 0E 01 &lt;yy mm dd hh mm ss&gt; &lt;userId:4&gt; &lt;sex|age&gt; &lt;age&gt; &lt;height&gt; &lt;xor checksum&gt;
+</code></pre><p>On the OKOK variant the scale uses the sex, age and height to do its own body composition maths.
+There are also frames for sending the user list and for setting up a user with their last weight (<code>A0 &lt;id:4> &lt;sex|age> &lt;height> &lt;weight*10></code>).
+Clock sync can be done either with a 7 byte date (year as a big-endian short, then month, day, hour, minute, second) or a plain 4 byte unix timestamp.</p>
+<p>All of this is delightfully plain. No encryption, no authentication, just frames with an XOR checksum.</p>
+<h1 id=path-2-huaweis-own-hagrid-scales>Path 2: Huawei&rsquo;s Own &ldquo;Hagrid&rdquo; Scales</h1>
+<p>The Scale 2 Pro and Scale 3 Pro are completely different and propriatary.
+The package is named <code>hagrid</code> (matching the Scale 3 Pro advertising as <code>Hagrid-B29</code>), it&rsquo;s built on a generic Huawei device framework with commands, acknowledgements and an &ldquo;encrypt&rdquo; flag that defaults to true.
+The Home Assistant integration I built from this targets the Scale 3; the Pro models use a closely related protocol, but I haven&rsquo;t tried them.</p>
+<h2 id=gatt>GATT</h2>
+<p>The scale exposes the usual standard services: Weight Scale (<code>181d</code>), Body Composition (<code>181b</code>), User Data (<code>181c</code>) and Current Time (<code>1805</code>).
+The app uses the standard characteristics for setting the age, gender, height and the time, but everything interesting lives in custom characteristics hung off those services.</p>
+<p>On User Data (<code>181c</code>) are the ones used for pairing and managing users:</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Characteristic UUID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>REQUEST_AUTH</td>
+<td><code>02b2a08e-f8b0-4047-b1fd-f4e0efeee679</code></td>
+</tr>
+<tr>
+<td>AUTH_TOKEN</td>
+<td><code>32330a04-15d9-421a-91c5-2a2d5c7525c9</code></td>
+</tr>
+<tr>
+<td>SEND_WORK_KEY</td>
+<td><code>a3d330f8-b84f-4f48-a78c-f8d1e33b597a</code></td>
+</tr>
+<tr>
+<td>BIND_REQUEST</td>
+<td><code>42596cbe-d291-4da3-8ca6-d1ae5d1c9174</code></td>
+</tr>
+<tr>
+<td>SET_USER_INFO</td>
+<td><code>8cc61d7d-66c0-4802-89c3-38c5a163592e</code></td>
+</tr>
+<tr>
+<td>SEND_GET_USER_DATA</td>
+<td><code>78bdadc1-5cae-4ec4-8832-21a020b1080b</code></td>
+</tr>
+<tr>
+<td>SEND_DELETE_USER_DATA</td>
+<td><code>7749db19-9db5-4430-b6e2-5fcfb3f5b988</code></td>
+</tr>
+</tbody>
+</table>
+<p>Under Current Time (<code>1805</code>) are the Wi-Fi provisioning and settings ones (these scales can upload to Huawei&rsquo;s cloud by themselves):</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Characteristic UUID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SEND_SSID</td>
+<td><code>33ff0cad-834f-4e42-ab91-a0747856d574</code></td>
+</tr>
+<tr>
+<td>SEND_WIFI_PASSWORD</td>
+<td><code>b4e384f2-d880-44e7-8c7e-5249239633b4</code></td>
+</tr>
+<tr>
+<td>GET_DEVICE_SSID</td>
+<td><code>75143e79-f878-4a00-a628-edc40509de7e</code></td>
+</tr>
+<tr>
+<td>GET_SCALE_VERSION</td>
+<td><code>1f5d3d5c-496d-4290-af03-c7a8d5419741</code></td>
+</tr>
+<tr>
+<td>SET_WEIGHT_UNIT</td>
+<td><code>11872f15-a91d-49da-ac89-5107284f3425</code></td>
+</tr>
+<tr>
+<td>SEND_WAKE_UP</td>
+<td><code>e3c7a876-3307-414d-84f6-fbcd64710dc3</code></td>
+</tr>
+</tbody>
+</table>
+<p>And on Body Composition (<code>181b</code>) are the two that actually matter if you just want your weight:</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Characteristic UUID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET_WEIGHT_REAL_TIME_DATA</td>
+<td><code>46797c17-d639-488d-9476-4789e8472878</code></td>
+</tr>
+<tr>
+<td>GET_WEIGHT_HISTORY_DATA</td>
+<td><code>0212f42a-5f19-4bc1-ba52-d7ec7ccb71a4</code></td>
+</tr>
+</tbody>
+</table>
+<p>There&rsquo;s also a firmware update service on <code>fff0</code> (<code>fff1</code> to <code>fff4</code> for request, SHA check, data and result) and a file transfer one on <code>fe86</code>.
+The full table has a few more entries, but those are the ones I&rsquo;d start with.</p>
+<p>The app always enables notifications on a characteristic, waits 100ms, and then writes to it.</p>
+<h2 id=framing>Framing</h2>
+<p>Payloads are cut into chunks of 222 bytes if encrypted or 238 if not, and each chunk gets a two byte prefix of <code>[totalChunks-1][chunkIndex]</code>.
+Those chunks are then cut further into BLE sized frames:</p>
+<ul>
+<li>The first byte is <code>0xDC</code> (encrypted) or <code>0xDB</code> (plain) when sending, and <code>0xCD</code> (encrypted) or <code>0xBD</code> (plain) when receiving.</li>
+<li>Then a length byte (on receive, the data length is this minus 3).</li>
+<li>Then a counter packed into one byte, with the frame index in the low nibble and the frame total in the high nibble.</li>
+<li>Up to 15 bytes of data.</li>
+<li>A two byte CRC16-CCITT (polynomial <code>0x1021</code>) at the end.</li>
+</ul>
+<p>Fifteen bytes per frame is tiny, but it presumably keeps everything within the default 23 byte BLE MTU.</p>
+<h2 id=encryption>Encryption</h2>
+<p>Encrypted messages are AES-128-CTR with no padding.
+Every message gets a fresh random 16 byte IV, and the message on the wire is <code>IV || ciphertext</code>.</p>
+<p>The key for this is called the <strong>work key</strong>, and it&rsquo;s a very low-tech thing: 16 random characters from <code>[a-z0-9]</code>, generated by the app once per scale and kept in a static <code>HashMap</code> in memory.
+It&rsquo;s never written to disk, so it&rsquo;s gone as soon as the app restarts and the next connection makes up a new one.
+That&rsquo;s quite nice from a security point of view, but it means the scale has to be told what the key is every single time, which is where the rest of the machinery comes in.</p>
+<h2 id=authentication>Authentication</h2>
+<p>Before the app will hand over the work key, there&rsquo;s a mutual challenge-response handshake using HMAC-SHA256:</p>
+<ol>
+<li>The scale supplies <code>randA</code>, 16 random bytes, after the app writes to REQUEST_AUTH.</li>
+<li>The app generates its own <code>randB</code>.</li>
+<li>The app sends <code>randB || T("1123")</code> to AUTH_TOKEN.</li>
+<li>The scale replies with a token, and the app only carries on if it matches <code>T("9856")</code>.</li>
+</ol>
+<p>Where <code>T(X)</code> is, with <code>RR = randA || randB</code>:</p>
+<pre tabindex=0><code>inner = HMAC_SHA256(key = CAK || ASCII(X), msg = RR)
+T(X)  = HMAC_SHA256(key = inner,           msg = RR)
+</code></pre><p><code>CAK</code> here is a 16 byte secret baked into the app, and the markers <code>"1123"</code> and <code>"9856"</code> make sure that a response can&rsquo;t just be replayed back at its sender.</p>
+<p>The markers were an amusing thing to track down.
+In the decompiled code they didn&rsquo;t appear as strings, they appeared as <code>TarConstants.LF_LINK</code>, <code>LF_SYMLINK</code> and so on, because jadx decided the byte constants <code>0x31 0x31 0x32 0x33</code> looked an awful lot like the Apache Commons Compress tar file type flags and helpfully inlined them.
+Translating them back gave me the ASCII digits.</p>
+<h2 id=wrapping-key>Wrapping Key</h2>
+<p>Once the scale has authenticated, the app sends it the work key on SEND_WORK_KEY.
+That message is itself encrypted with a second key, the <strong>wrapping key</strong>, derived like this (with <code>mac</code> being the scale&rsquo;s Bluetooth address without the colons):</p>
+<pre tabindex=0><code>c3   = ASCII(mac + &quot;0000&quot;)                       (16 bytes)
+x[i] = (A[i] &lt;&lt; 4) ^ B[i]
+h    = SHA256(x)[0:16]
+r[i] = (h[i] &gt;&gt; 6) ^ c3[i]
+wrapKey = SHA256(r)[0:16]
+</code></pre><p><code>A</code> and <code>B</code> are two more 16 byte secrets from the same place as the CAK.
+I have to say this is a strange construction. The shift by 6 means only the top two bits of each byte of <code>h</code> make it into <code>r</code>, so the final key is really the MAC address with a small, fixed, device-independent mask XORed over it before one last hash.
+I&rsquo;d be surprised if that is what the author intended, but it&rsquo;s what the code does.</p>
+<h2 id=where-the-secrets-come-from>Where the Secrets Come From</h2>
+<p>The three secrets (CAK, A and B) aren&rsquo;t in the Java code.
+They&rsquo;re fetched through a JNI call into <code>libwhiteBoxJniLib-arm64-v8a.so</code>, which first checks the signing certificate of the calling APK against around 13 hardcoded hashes, and refuses to hand anything over if it doesn&rsquo;t match.</p>
+<p>That check only guards the <em>door</em>, though.
+Opening the library in Ghidra, the three values turn out to be plain 32 character hex strings sitting in the binary, which the Java side decodes into 16 raw bytes.
+Which string is which is chosen by a switch statement for the CAK and a table of relative offsets for the other two, so I cross checked the results by evaluating the pointer arithmetic in Ghidra and by regex scanning the raw strings, and both agreed.</p>
+<h2 id=measurement-data>Measurement Data</h2>
+<p>Once you&rsquo;ve got past all of that, the data itself is blessedly simple.
+A live or history record has:</p>
+<table>
+<thead>
+<tr>
+<th>Bytes</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0-1</td>
+<td>Weight, little-endian u16, divide by 100 for kg</td>
+</tr>
+<tr>
+<td>2-3</td>
+<td>Body fat, u16, divide by 10 for %</td>
+</tr>
+<tr>
+<td>4-11</td>
+<td>Timestamp</td>
+</tr>
+<tr>
+<td>24-25</td>
+<td>Heart rate, u16</td>
+</tr>
+</tbody>
+</table>
+<p>There are segmental impedance values after that which I haven&rsquo;t decoded.
+The app&rsquo;s data model has left/right hand and foot fields (<code>lfrf</code>, <code>lhrh</code>, <code>lhlf</code>, <code>lhrf</code>, <code>rhlf</code>, <code>rhrf</code>) as well as high-frequency variants, so the 8-electrode scales are sending raw segmental impedance and the app does the work of turning it into limb fat and muscle mass.</p>
+<p>The &ldquo;mini user&rdquo; record that the scale stores for each person looks like this:</p>
+<table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Size</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>2</td>
+<td>Weight (/100)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>12</td>
+<td>Resistance</td>
+</tr>
+<tr>
+<td>14</td>
+<td>32</td>
+<td>huid (Huawei user ID)</td>
+</tr>
+<tr>
+<td>46</td>
+<td>1</td>
+<td>Sex</td>
+</tr>
+<tr>
+<td>47</td>
+<td>1</td>
+<td>Age</td>
+</tr>
+<tr>
+<td>48</td>
+<td>2</td>
+<td>Height</td>
+</tr>
+<tr>
+<td>50</td>
+<td>1</td>
+<td>isOver</td>
+</tr>
+<tr>
+<td>51</td>
+<td>1</td>
+<td>isMainId</td>
+</tr>
+<tr>
+<td>52</td>
+<td>8</td>
+<td>Time</td>
+</tr>
+</tbody>
+</table>
+<h2 id=firmware-updates>Firmware Updates</h2>
+<p>Firmware updates use a separate TLV channel (service ID 9) layered on top of the same encrypted framing, with a tag byte, a length byte and a value.
+The app sends the file name, size and type, negotiates a packet size and interval with the scale, streams the data with a bitmap of received packets, and the scale reports a result at the end.
+I haven&rsquo;t gone any deeper than the command list.</p>
+<h1 id=prior-art>Prior Art</h1>
+<p>I wasn&rsquo;t the first person to look at this.
+<a href=https://github.com/oliexdev/openScale>openScale</a> is an open source Android app for tracking weight and body measurements from Bluetooth scales without needing an account, and it&rsquo;s the reference for how a lot of scale protocols work.
+Its Huawei driver is the basis for the Home Assistant integration, which is a port of it.
+It was also a handy source of known good data, since the framing, CRCs, key derivation and decoding can all be checked against a real capture.</p>
+<p>On the band side, <a href=https://gist.github.com/psolyca/68fdfee0960737c1234f8d7f7a6c143a>Honor Band 4 notes</a> cover the same app, which uses a totally different protocol but shares the same <code>libwhiteBoxJniLib.so</code>.
+It confirmed that the secrets are stored split across the binary, and also pointed at an easier route for bands: the app caches a per-device master key in <code>SharedPreferences</code>, in plain text before version 10.0.1.319.</p>
+<p>I checked whether the scale code does the same, and it doesn&rsquo;t, so that shortcut wasn&rsquo;t available.
+The only preferences files the weight code touches hold a user ID, some UI state and a per-MAC flag for the Chipsea scales, and the work key lives only in memory.
+There&rsquo;s nothing to pull off a rooted phone, and the white box library really is the only way in.</p>
+<h1 id=the-home-assistant-integration>The Home Assistant Integration</h1>
+<p>With the protocol worked out, the end result is a <a href=https://github.com/Peter-Maguire/hacs-huawei-scale>HACS integration</a> that does the job of the app.
+The scale only advertises while someone is standing on it, so the integration waits for that, then connects, authenticates, sets the user profile, waits for the measurement, publishes it and disconnects.
+It goes through Home Assistant&rsquo;s own Bluetooth stack, so a local adapter or an ESPHome Bluetooth proxy both work.</p>
+<p>Each weigh-in turns into Home Assistant sensors (weight, BMI, body fat, body water, muscle, bone mass, visceral fat and so on), and because the scale has no idea who just stepped on it, you pick the person for the next weigh-in from a select entity.
+Home Assistant keeps the history, so no phone is needed.</p>
+</div>
+</article>
+<hr>
+<div class=post-info>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83.0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7" y2="7"/></svg>
+<span class=tag><a href=https://petermaguire.xyz/tags/reverse-engineering/>reverse-engineering</a></span>
+<span class=tag><a href=https://petermaguire.xyz/tags/bluetooth/>bluetooth</a></span>
+</p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6A2 2 0 004 4v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+2311 Words
+</p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+2026-10-27 12:00
+</p>
+</div>
+<hr>
+<div class=sharing-buttons>
+<a class=resp-sharing-button__link href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f" target=_blank rel=noopener aria-label title="Share on facebook">
+<div class="resp-sharing-button resp-sharing-button--facebook resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://twitter.com/intent/tweet/?url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f" target=_blank rel=noopener aria-label title="Share on twitter">
+<div class="resp-sharing-button resp-sharing-button--twitter resp-sharing-button--small">
+<div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9.0 01-3.14 1.53 4.48 4.48.0 00-7.86 3v1A10.66 10.66.0 013 4s-4 9 5 13a11.64 11.64.0 01-7 2c9 5 20 0 20-11.5a4.5 4.5.0 00-.08-.83A7.72 7.72.0 0023 3z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://www.tumblr.com/widgets/share/tool?posttype=link&title=Reverse%20Engineering%20Huawei%27s%20Smart%20Scale%20Protocol&caption=Reverse%20Engineering%20Huawei%27s%20Smart%20Scale%20Protocol&canonicalUrl=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f" target=_blank rel=noopener aria-label title="Share on tumblr">
+<div class="resp-sharing-button resp-sharing-button--tumblr resp-sharing-button--small">
+<div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.563 24c-5.093.0-7.031-3.756-7.031-6.411V9.747H5.116V6.648c3.63-1.313 4.512-4.596 4.71-6.469C9.84.051 9.941.0 9.999.0h3.517v6.114h4.801v3.633h-4.82v7.47c.016 1.001.375 2.371 2.207 2.371h.09c.631-.02 1.486-.205 1.936-.419l1.156 3.425c-.436.636-2.4 1.374-4.156 1.404h-.178l.011.002z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="mailto:?subject=Reverse%20Engineering%20Huawei%27s%20Smart%20Scale%20Protocol&body=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f" target=_self rel=noopener aria-label title="Share via email">
+<div class="resp-sharing-button resp-sharing-button--email resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1.0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1.0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://pinterest.com/pin/create/button/?url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f&media=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f;description=Reverse%20Engineering%20Huawei%27s%20Smart%20Scale%20Protocol" target=_blank rel=noopener aria-label title="Share on pinterest">
+<div class="resp-sharing-button resp-sharing-button--pinterest resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none"><path d="M12.017.0C5.396.0.029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024.0 1.518.769 1.518 1.688.0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128.0 3.768-2.245 3.768-5.487.0-2.861-2.063-4.869-5.008-4.869-3.41.0-5.409 2.562-5.409 5.199.0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646.0-3.776 2.748-7.252 7.92-7.252 4.158.0 7.392 2.967 7.392 6.923.0 4.135-2.607 7.462-6.233 7.462-1.214.0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607.0 11.985-5.365 11.985-11.987C23.97 5.39 18.592.026 11.985.026L12.017.0z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://www.linkedin.com/shareArticle?mini=true&url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f&title=Reverse%20Engineering%20Huawei%27s%20Smart%20Scale%20Protocol&summary=Reverse%20Engineering%20Huawei%27s%20Smart%20Scale%20Protocol&source=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f" target=_blank rel=noopener aria-label title="Share on linkedin">
+<div class="resp-sharing-button resp-sharing-button--linkedin resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://reddit.com/submit/?url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f&resubmit=true&title=Reverse%20Engineering%20Huawei%27s%20Smart%20Scale%20Protocol" target=_blank rel=noopener aria-label title="Share on reddit">
+<div class="resp-sharing-button resp-sharing-button--reddit resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none"><path d="M12 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm5.01 4.744c.688.0 1.25.561 1.25 1.249a1.25 1.25.0 01-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968.0 1.754.786 1.754 1.754.0.716-.435 1.333-1.01 1.614a3.111 3.111.0 01.042.52c0 2.694-3.13 4.87-7.004 4.87s-7.004-2.176-7.004-4.87c0-.183.015-.366.043-.534A1.748 1.748.0 014.028 12c0-.968.786-1.754 1.754-1.754.463.0.898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342.0 01.14-.197.35.35.0 01.238-.042l2.906.617a1.214 1.214.0 011.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687.0 1.248-.561 1.248-1.249S9.937 12 9.249 12zm5.5.0c-.687.0-1.248.561-1.248 1.25.0.687.561 1.248 1.249 1.248S16 13.937 16 13.249c0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327.0 00-.231.094.33.33.0 000 .463c.842.842 2.484.913 2.961.913s2.105-.056 2.961-.913a.361.361.0 00.029-.463.33.33.0 00-.464.0c-.547.533-1.684.73-2.512.73-.828.0-1.979-.196-2.512-.73a.326.326.0 00-.232-.095z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://www.xing.com/app/user?op=share;url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f;title=Reverse%20Engineering%20Huawei%27s%20Smart%20Scale%20Protocol" target=_blank rel=noopener aria-label title="Share on xing">
+<div class="resp-sharing-button resp-sharing-button--xing resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none"><path d="M18.188.0c-.517.0-.741.325-.927.66.0.0-7.455 13.224-7.702 13.657.015.024 4.919 9.023 4.919 9.023.17.308.436.66.967.66h3.454c.211.0.375-.078.463-.22.089-.151.089-.346-.009-.536l-4.879-8.916c-.004-.006-.004-.016.0-.022L22.139.756c.095-.191.097-.387.006-.535C22.056.078 21.894.0 21.686.0h-3.498zM3.648 4.74c-.211.0-.385.074-.473.216-.09.149-.078.339.02.531l2.34 4.05c.004.01.004.016.0.021L1.86 16.051c-.099.188-.093.381.0.529.085.142.239.234.45.234h3.461c.518.0.766-.348.945-.667l3.734-6.609-2.378-4.155c-.172-.315-.434-.659-.962-.659H3.648v.016z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="whatsapp://send?text=Reverse%20Engineering%20Huawei%27s%20Smart%20Scale%20Protocol%20https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f" target=_blank rel=noopener aria-label title="Share on whatsapp">
+<div class="resp-sharing-button resp-sharing-button--whatsapp resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198.0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479.0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87.0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86.0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64.0 5.122 1.03 6.988 2.898a9.825 9.825.0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815.0 0012.05.0C5.495.0.16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882.0 005.683 1.448h.005c6.554.0 11.89-5.335 11.893-11.893a11.821 11.821.0 00-3.48-8.413z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f&t=Reverse%20Engineering%20Huawei%27s%20Smart%20Scale%20Protocol" target=_blank rel=noopener aria-label title="Share on hacker news">
+<div class="resp-sharing-button resp-sharing-button--hackernews resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentcolor" stroke="none"><path d="M0 24V0h24v24H0zM6.951 5.896l4.112 7.708v5.064h1.583v-4.972l4.148-7.799h-1.749l-2.457 4.875c-.372.745-.688 1.434-.688 1.434s-.297-.708-.651-1.434L8.831 5.896h-1.88z"/></svg>
+</div>
+</div>
+</a>
+<a class=resp-sharing-button__link href="https://telegram.me/share/url?text=Reverse%20Engineering%20Huawei%27s%20Smart%20Scale%20Protocol&url=https%3a%2f%2fpetermaguire.xyz%2fposts%2fhuawei-scale-ble-protocol%2f" target=_blank rel=noopener aria-label title="Share on telegram">
+<div class="resp-sharing-button resp-sharing-button--telegram resp-sharing-button--small"><div aria-hidden=true class="resp-sharing-button__icon resp-sharing-button__icon--solid"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+</div>
+</div>
+</a>
+</div>
+<div class=pagination>
+<div class=pagination__buttons>
+<span class="button next">
+<a href=https://petermaguire.xyz/posts/discord-hacked-help/>
+<span class=button__text>What to do if you fall for the Game Tester Scam</span>
+<span class=button__icon>→</span>
+</a>
+</span>
+</div>
+</div>
+<script src=https://giscus.app/client.js data-repo=Peter-Maguire/petermaguire.xyz data-repo-id=R_kgDOId1ysQ data-category=General data-category-id=DIC_kwDOId1ysc4Cmnwx data-mapping=title data-strict=0 data-reactions-enabled=1 data-emit-metadata=0 data-input-position=top data-theme=preferred_color_scheme data-lang=en data-loading=lazy crossorigin=anonymous async></script>
+</main>
+</div>
+<footer class=footer>
+</footer>
+</div>
+<script type=text/javascript src=https://petermaguire.xyz/bundle.min.599099f1f14b78b657d524b28e10e0c5098e7cd46e9c7aed73d577068a276c3ff1bb234cbf29cb313333e83cf411727b43157c91ce5b809e2ffc81664614608e.js integrity="sha512-WZCZ8fFLeLZX1SSyjhDgxQmOfNRunHrtc9V3BoonbD/xuyNMvynLMTMz6Dz0EXJ7QxV8kc5bgJ4v/IFmRhRgjg=="></script>
+</body>
+</html>
